@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/*
+  English Quest — design system
+  A warm, cozy "study-room" palette with a playful, gamified accent.
+  Single light theme on purpose (keeps the MVP consistent and bug-free).
+*/
+@theme {
+  --color-paper: #fbf6ec; /* warm cream page background */
+  --color-paper-2: #f3ebdc; /* slightly deeper cream for panels */
+  --color-ink: #2c2433; /* deep warm near-black for text */
+  --color-ink-soft: #6b6473; /* muted text */
+
+  --color-brand: #6d5dfc; /* indigo-violet — the "quest" accent */
+  --color-brand-dark: #4f3ff0;
+  --color-brand-soft: #ece9ff;
+
+  --color-amber: #f7b733; /* stars & rewards */
+  --color-amber-soft: #fdf0d0;
+
+  --color-success: #22c55e;
+  --color-success-soft: #dcfce7;
+  --color-danger: #ef4444;
+  --color-danger-soft: #fee2e2;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #fff7e8 0%, transparent 60%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Reusable building blocks shared across every droplet (keeps the UI DRY). */
+@layer components {
+  .eq-card {
+    @apply rounded-2xl bg-white/90 shadow-sm ring-1 ring-black/5 backdrop-blur;
+  }
+
+  /* Base button — always combine with a variant, e.g. `eq-btn eq-btn-primary`. */
+  .eq-btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .eq-btn-primary {
+    @apply bg-brand text-white hover:bg-brand-dark;
+  }
+
+  .eq-btn-ghost {
+    @apply bg-transparent text-ink ring-1 ring-black/10 hover:bg-black/5;
+  }
+
+  .eq-chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand-dark;
+  }
+}
