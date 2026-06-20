@@ -50,38 +50,46 @@ export default function Dashboard({ session }: { session: Session }) {
         </div>
       </header>
 
-      <div className="mt-6 flex flex-col gap-6">
+      <div className="mt-6 flex flex-col gap-5">
+        {/* Compact greeting — personal, but doesn't bury the quest. */}
         <UserProfileCard profile={profile} />
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <ProgressCard icon="📚" value={stats.completedCount} label="Lessons done" />
-          <ProgressCard
-            icon="⭐"
-            value={stats.totalStars}
-            label="Stars earned"
-            accent="text-amber"
-          />
-          <ProgressCard
-            icon="📈"
-            value={`${stats.completionPercent}%`}
-            label="Completion"
-          />
-          <StreakCard streak={stats.currentStreak} />
-        </div>
-
-        {/* Overall completion bar */}
-        <div className="eq-card p-5">
-          <div className="flex items-center justify-between text-sm font-medium text-ink-soft">
-            <span>Overall progress</span>
-            <span>{stats.completionPercent}%</span>
-          </div>
-          <div className="mt-2">
-            <ProgressBar percent={stats.completionPercent} />
-          </div>
-        </div>
-
+        {/* HERO — the single most important thing to do today. */}
         <TodayLessonCard day={today} />
+
+        {/* Streak — sits right under the quest to nudge the daily habit. */}
+        <StreakCard streak={stats.currentStreak} hasQuestToday={today !== null} />
+
+        {/* Supporting stats (secondary to the quest above). */}
+        <section>
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-ink-soft">
+            Your progress
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <ProgressCard icon="📚" value={stats.completedCount} label="Lessons done" />
+            <ProgressCard
+              icon="⭐"
+              value={stats.totalStars}
+              label="Stars earned"
+              accent="text-amber"
+            />
+            <ProgressCard
+              icon="📈"
+              value={`${stats.completionPercent}%`}
+              label="Completion"
+            />
+          </div>
+          <div className="eq-card mt-3 p-5">
+            <div className="flex items-center justify-between text-sm font-medium text-ink-soft">
+              <span>Overall progress</span>
+              <span>{stats.completionPercent}%</span>
+            </div>
+            <div className="mt-2">
+              <ProgressBar percent={stats.completionPercent} />
+            </div>
+          </div>
+        </section>
+
         <LearningCalendar days={calendar} />
 
         {/* Data safety net — everything lives only on this device. */}

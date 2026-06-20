@@ -4,7 +4,7 @@ import type { CalendarDay } from "@/lib/progress";
 export default function TodayLessonCard({ day }: { day: CalendarDay | null }) {
   if (!day) {
     return (
-      <section className="eq-card p-6 sm:p-8">
+      <section className="eq-card p-6 shadow-md ring-brand/30 sm:p-8">
         <span className="eq-chip mb-3">🎉 All caught up</span>
         <h2 className="text-xl font-bold text-ink">
           You&apos;ve completed every lesson available!
@@ -19,7 +19,7 @@ export default function TodayLessonCard({ day }: { day: CalendarDay | null }) {
   const m = day.meta;
 
   return (
-    <section className="eq-card p-6 sm:p-8">
+    <section className="eq-card p-6 shadow-md ring-brand/30 sm:p-8">
       <span className="eq-chip mb-3">📌 Today&apos;s quest</span>
       <p className="text-sm font-semibold text-brand-dark">
         Day {m.day} · {m.topic}
