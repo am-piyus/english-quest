@@ -15,11 +15,16 @@ Sign in → Open today's lesson → Learn concepts → Complete assignments
 
 ## Tech stack
 
-- **Next.js** (App Router) + **React** + **TypeScript**
+- **Next.js** (App Router, **static export**) + **React** + **TypeScript**
 - **Tailwind CSS v4** for styling
-- **NextAuth / Auth.js** for authentication _(added in a later droplet)_
+- **Client-side auth**: demo login + **Google Identity Services** (no backend)
 - **Framer Motion** for feedback animations _(added in a later droplet)_
-- **Vercel** for deployment
+- **GitHub Pages** for hosting (Vercel-compatible too)
+
+> **Static by design.** The whole app is a static export so it can be hosted on
+> GitHub Pages, which has no server. Auth, profile, and progress all live in the
+> browser (localStorage). Server-side auth and a real database are V0.2 items for
+> when the app moves to a backend host.
 
 ## Getting started
 
@@ -43,15 +48,24 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deployment
 
-The app deploys to **Vercel** with zero configuration:
+### GitHub Pages (primary)
 
-1. Push to `main` on GitHub (already configured as `origin`).
-2. In Vercel, **Import** the `english-quest` repository.
-3. Every push to `main` auto-deploys to a public URL.
+The repo ships a GitHub Actions workflow (`.github/workflows/deploy.yml`) that
+builds the static export and publishes it. One-time setup:
 
-Environment variables (added as features land) go in Vercel's
-**Project → Settings → Environment Variables**. See `.env.example` once auth is
-configured.
+1. On GitHub: **Settings → Pages → Build and deployment → Source = GitHub Actions**.
+2. Push to `main`. The workflow builds and deploys automatically.
+3. Live at **`https://am-piyus.github.io/english-quest/`**.
+
+To enable "Sign in with Google", add a repository **variable**
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Settings → Secrets and variables → Actions →
+Variables) — see `.env.example`. Without it, the demo login is used.
+
+### Vercel (optional, later)
+
+Because it's a standard Next.js app, you can **Import** the repo into Vercel for
+a zero-config deploy at the domain root (no `basePath`). The static export works
+as-is; dropping `output: "export"` later unlocks server features.
 
 ## Project status (V0.1 roadmap)
 
