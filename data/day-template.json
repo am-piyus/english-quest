@@ -1,0 +1,74 @@
+{
+  "day": 0,
+  "title": "Lesson title here",
+  "topic": "Grammar topic",
+  "summary": "One short line shown on the dashboard card.",
+  "difficulty": "Easy",
+  "durationMin": 15,
+  "objectives": [
+    "First thing the learner will be able to do",
+    "Second learning objective",
+    "Third learning objective"
+  ],
+  "intro": "An optional friendly introduction shown on the first screen.",
+  "sections": [
+    {
+      "kind": "concept",
+      "concept": {
+        "title": "Concept title",
+        "explanation": "Explain the idea here.\n\nLeave a blank line to start a new paragraph.",
+        "examples": ["First example sentence.", "Second example sentence."],
+        "note": "An optional tip or key insight."
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Practice",
+        "intro": "Optional intro for the assignment.",
+        "questions": [
+          {
+            "id": "d0-q1",
+            "type": "mcq",
+            "prompt": "A multiple-choice question?",
+            "options": ["Wrong", "Correct", "Wrong", "Wrong"],
+            "answerIndex": 1,
+            "difficulty": "Easy",
+            "hint": "Optional hint shown after a wrong attempt.",
+            "feedback": "Optional explanation shown after a correct answer."
+          },
+          {
+            "id": "d0-q2",
+            "type": "fill-blank",
+            "prompt": "Complete: I ____ (be) a learner.",
+            "answer": "am",
+            "alternates": ["am."],
+            "difficulty": "Easy",
+            "feedback": "With I, the verb to be is 'am'."
+          },
+          {
+            "id": "d0-q3",
+            "type": "structure",
+            "prompt": "What is the structure of 'She reads books'?",
+            "answer": "subject + verb + object",
+            "alternates": ["subject verb object"],
+            "difficulty": "Medium"
+          },
+          {
+            "id": "d0-q4",
+            "type": "case",
+            "prompt": "'I am reading now.' This action is...",
+            "options": ["a habit", "happening right now", "a fact", "finished"],
+            "answerIndex": 1,
+            "difficulty": "Medium"
+          },
+          {
+            "id": "d0-q5",
+            "type": "reflection",
+            "prompt": "An open question. Stored, never graded."
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -64,6 +64,7 @@ export interface Lesson {
   day: number;
   title: string;
   topic: string;
+  summary: string; // one-line teaser shown on the dashboard/calendar
   difficulty: Difficulty;
   durationMin: number;
   objectives: string[];
