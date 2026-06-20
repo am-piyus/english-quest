@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import type { Lesson } from "@/types/lesson";
 import type { AnswerResult, ResponseMap } from "@/types/question";
 import RequireAuth from "@/components/RequireAuth";
@@ -11,6 +12,7 @@ import ConceptCard from "@/components/ConceptCard";
 import AssignmentBlock from "@/components/AssignmentBlock";
 import SessionProgress from "@/components/SessionProgress";
 import LessonNavigator from "@/components/LessonNavigator";
+import AchievementPopup from "@/components/AchievementPopup";
 
 export default function SessionScreen({
   day,
@@ -71,6 +73,13 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
       ? section.assignment.questions.filter((q) => q.type !== "reflection")
       : [];
   const allAnswered = gradable.every((q) => Boolean(responses[q.id]));
+  const assignmentPerfect =
+    gradable.length > 0 && gradable.every((q) => responses[q.id]?.correct);
+
+  const sessionStars = Object.values(responses).reduce(
+    (sum, r) => sum + r.score,
+    0,
+  );
 
   function goTo(nextStep: number) {
     setStep(nextStep);
@@ -88,6 +97,12 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 px-5 py-8 sm:px-6">
+      <AchievementPopup
+        show={assignmentPerfect}
+        title="Perfect! 🎉"
+        detail="Every answer correct"
+      />
+
       <div className="flex items-center justify-between">
         <Link
           href="/dashboard"
@@ -95,7 +110,17 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
         >
           ← Exit
         </Link>
-        <span className="text-sm font-medium text-ink-soft">{lesson.topic}</span>
+        <div className="flex items-center gap-3 text-sm font-medium text-ink-soft">
+          <span>{lesson.topic}</span>
+          <motion.span
+            key={sessionStars}
+            initial={{ scale: 1.4 }}
+            animate={{ scale: 1 }}
+            className="flex items-center gap-1 font-bold text-amber"
+          >
+            ⭐ {sessionStars}
+          </motion.span>
+        </div>
       </div>
 
       <div className="mt-4">

@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { Question } from "@/types/lesson";
 import type { AnswerResult } from "@/types/question";
 import { isCorrect } from "@/lib/answerValidator";
 import { scoreQuestion } from "@/lib/scoringEngine";
+import { nudge, praise } from "@/lib/gamificationEngine";
 import MCQQuestion from "@/components/MCQQuestion";
 import TextQuestion from "@/components/TextQuestion";
+import StarReward from "@/components/StarReward";
 
 export default function QuestionCard({
   question,
@@ -22,6 +25,7 @@ export default function QuestionCard({
   const [answer, setAnswer] = useState(saved?.answer ?? "");
   const [checked, setChecked] = useState(Boolean(saved));
   const [correct, setCorrect] = useState(saved?.correct ?? false);
+  const [score, setScore] = useState(saved?.score ?? 0);
 
   const isReflection = question.type === "reflection";
 
@@ -33,14 +37,11 @@ export default function QuestionCard({
 
   function submit() {
     const ok = isCorrect(question, answer);
+    const earned = scoreQuestion(question, ok);
     setChecked(true);
     setCorrect(ok);
-    onAnswer({
-      questionId: question.id,
-      answer,
-      correct: ok,
-      score: scoreQuestion(question, ok),
-    });
+    setScore(earned);
+    onAnswer({ questionId: question.id, answer, correct: ok, score: earned });
   }
 
   const canSubmit = answer.trim().length > 0 && !(correct && checked);
@@ -87,19 +88,29 @@ export default function QuestionCard({
           {isReflection ? "Save" : correct ? "Correct ✓" : "Check"}
         </button>
 
-        {checked && (
-          <span
-            className={`text-sm font-semibold ${
-              isReflection || correct ? "text-success" : "text-danger"
-            }`}
-          >
-            {isReflection
-              ? "✅ Saved"
-              : correct
-                ? "✅ Correct!"
-                : "❌ Not quite — try again"}
-          </span>
-        )}
+        <AnimatePresence mode="wait">
+          {checked && (
+            <motion.span
+              key={`${correct}-${answer}`}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className={`flex items-center gap-1.5 text-sm font-semibold ${
+                isReflection || correct ? "text-success" : "text-danger"
+              }`}
+            >
+              {isReflection ? (
+                "✅ Saved"
+              ) : correct ? (
+                <>
+                  ✅ {praise(index)} <StarReward count={score} />
+                </>
+              ) : (
+                `❌ ${nudge(index)}`
+              )}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
 
       {checked && correct && question.type !== "reflection" && question.feedback && (

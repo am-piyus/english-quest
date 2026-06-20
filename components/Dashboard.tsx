@@ -10,6 +10,7 @@ import LogoutButton from "@/components/LogoutButton";
 import UserProfileCard from "@/components/UserProfileCard";
 import StreakCard from "@/components/StreakCard";
 import ProgressCard from "@/components/ProgressCard";
+import ProgressBar from "@/components/ProgressBar";
 import TodayLessonCard from "@/components/TodayLessonCard";
 import LearningCalendar from "@/components/LearningCalendar";
 
@@ -70,11 +71,8 @@ export default function Dashboard({ session }: { session: Session }) {
             <span>Overall progress</span>
             <span>{stats.completionPercent}%</span>
           </div>
-          <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-paper-2">
-            <div
-              className="h-full rounded-full bg-brand transition-all"
-              style={{ width: `${stats.completionPercent}%` }}
-            />
+          <div className="mt-2">
+            <ProgressBar percent={stats.completionPercent} />
           </div>
         </div>
 

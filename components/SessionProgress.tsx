@@ -1,3 +1,5 @@
+import ProgressBar from "@/components/ProgressBar";
+
 export default function SessionProgress({
   current,
   total,
@@ -15,11 +17,8 @@ export default function SessionProgress({
         </span>
         <span>{percent}%</span>
       </div>
-      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-paper-2">
-        <div
-          className="h-full rounded-full bg-brand transition-all"
-          style={{ width: `${percent}%` }}
-        />
+      <div className="mt-1.5">
+        <ProgressBar percent={percent} className="h-2" />
       </div>
     </div>
   );
