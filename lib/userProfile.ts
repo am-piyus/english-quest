@@ -115,7 +115,12 @@ let snapValue: UserProfile | null = null;
 
 export function getProfileSnapshot(email: string): UserProfile | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(keyFor(email));
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(keyFor(email));
+  } catch {
+    return null;
+  }
   if (email === snapEmail && raw === snapRaw) return snapValue;
   snapEmail = email;
   snapRaw = raw;

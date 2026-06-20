@@ -232,7 +232,12 @@ let snapValue: ProgressMap = EMPTY;
 
 export function getProgressSnapshot(email: string): ProgressMap {
   if (typeof window === "undefined") return EMPTY;
-  const raw = window.localStorage.getItem(keyFor(email));
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(keyFor(email));
+  } catch {
+    return EMPTY;
+  }
   if (email === snapEmail && raw === snapRaw) return snapValue;
   snapEmail = email;
   snapRaw = raw;

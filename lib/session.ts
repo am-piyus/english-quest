@@ -99,7 +99,12 @@ let snapValue: Session | null = null;
 
 export function getSessionSnapshot(): Session | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(KEY);
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(KEY);
+  } catch {
+    return null; // storage access blocked — degrade instead of throwing in render
+  }
   if (snapInit && raw === snapRaw) return snapValue;
   snapInit = true;
   snapRaw = raw;

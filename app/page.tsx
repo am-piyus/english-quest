@@ -25,11 +25,11 @@ const features = [
 ];
 
 const steps = [
-  { n: "1", label: "Sign in" },
-  { n: "2", label: "Open today's quest" },
-  { n: "3", label: "Learn & practice" },
+  { n: "1", label: "Open today's quest" },
+  { n: "2", label: "Learn a concept" },
+  { n: "3", label: "Practice & get feedback" },
   { n: "4", label: "Earn stars" },
-  { n: "5", label: "Track progress" },
+  { n: "5", label: "Save your progress" },
 ];
 
 export default function Home() {
@@ -60,7 +60,7 @@ export default function Home() {
             instant feedback, and rewards — so practice feels like progress.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/login" className="eq-btn eq-btn-primary">
+            <Link href="/welcome" className="eq-btn eq-btn-primary">
               Start learning — it&apos;s free
             </Link>
             <a href="#how-it-works" className="eq-btn eq-btn-ghost">
