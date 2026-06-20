@@ -1,0 +1,131 @@
+{
+  "day": 2,
+  "title": "Describing what's happening now",
+  "topic": "Present Continuous",
+  "difficulty": "Medium",
+  "durationMin": 18,
+  "objectives": [
+    "Form the present continuous with am/is/are + verb-ing",
+    "Use it for actions happening right now",
+    "Tell the difference between simple present and present continuous"
+  ],
+  "intro": "The present continuous describes actions happening at this very moment. Let's see how it works and when to use it.",
+  "sections": [
+    {
+      "kind": "concept",
+      "concept": {
+        "title": "Am / is / are + verb-ing",
+        "explanation": "We form the present continuous with the verb to be (am/is/are) plus a verb ending in -ing.\n\nThe structure is:\nSubject + am/is/are + verb-ing (+ object).",
+        "examples": [
+          "I am reading a book.",
+          "She is talking to her teacher.",
+          "They are playing in the garden."
+        ],
+        "note": "Right-now signal words include now, right now, at the moment, and look! / listen!"
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Quick check: actions now",
+        "questions": [
+          {
+            "id": "d2-q1",
+            "type": "fill-blank",
+            "prompt": "Complete: Listen! The baby ____ (cry).",
+            "answer": "is crying",
+            "difficulty": "Medium",
+            "hint": "Use is + verb-ing for it/he/she.",
+            "feedback": "is + crying → \"The baby is crying\" describes an action happening now."
+          },
+          {
+            "id": "d2-q2",
+            "type": "structure",
+            "prompt": "What is the structure of \"She is reading a book\"?",
+            "answer": "subject + is + verb-ing + object",
+            "alternates": [
+              "subject + is + verbing + object",
+              "subject is verb-ing object"
+            ],
+            "difficulty": "Medium",
+            "feedback": "She (subject) + is + reading (verb-ing) + a book (object)."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "concept",
+      "concept": {
+        "title": "Now vs. in general",
+        "explanation": "Use the present continuous for what is happening now, and the simple present for habits and general truths.\n\nCompare:\nI am drinking tea now. (this moment)\nI drink tea every morning. (habit)",
+        "examples": [
+          "He is studying right now.",
+          "He studies every evening.",
+          "Look! It is raining."
+        ],
+        "note": "Some verbs (like, know, want, need) are usually NOT used in the continuous form."
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Practice: which tense?",
+        "questions": [
+          {
+            "id": "d2-q3",
+            "type": "case",
+            "prompt": "\"I am talking to my teacher.\" This sentence describes an action that is...",
+            "options": [
+              "a daily habit",
+              "happening right now",
+              "a general fact",
+              "finished in the past"
+            ],
+            "answerIndex": 1,
+            "difficulty": "Medium",
+            "hint": "The present continuous points to this moment.",
+            "feedback": "am talking = happening right now."
+          },
+          {
+            "id": "d2-q4",
+            "type": "mcq",
+            "prompt": "Choose the correct sentence for a habit.",
+            "options": [
+              "She is going to school every day.",
+              "She goes to school every day.",
+              "She go to school every day.",
+              "She going to school every day."
+            ],
+            "answerIndex": 1,
+            "difficulty": "Medium",
+            "hint": "\"Every day\" is a habit, so use the simple present.",
+            "feedback": "Habits use the simple present: She goes to school every day."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Final check",
+        "intro": "A short review and a reflection to finish.",
+        "questions": [
+          {
+            "id": "d2-q5",
+            "type": "fill-blank",
+            "prompt": "Complete: Right now, we ____ (learn) English.",
+            "answer": "are learning",
+            "difficulty": "Hard",
+            "hint": "Use are + verb-ing for we/you/they.",
+            "feedback": "we are learning — an action happening at this moment."
+          },
+          {
+            "id": "d2-q6",
+            "type": "reflection",
+            "prompt": "Write 2–3 sentences about what is happening around you right now."
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { getAllLessonMeta } from "@/lib/lessons";
+import { getLesson } from "@/lib/lessonContent";
 import SessionScreen from "@/components/SessionScreen";
 
 // Pre-render a static page per known day (required for `output: export`).
@@ -12,5 +13,6 @@ export default async function SessionPage({
   params: Promise<{ day: string }>;
 }) {
   const { day } = await params;
-  return <SessionScreen day={Number(day)} />;
+  const dayNumber = Number(day);
+  return <SessionScreen day={dayNumber} lesson={getLesson(dayNumber)} />;
 }

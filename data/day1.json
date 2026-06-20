@@ -1,0 +1,129 @@
+{
+  "day": 1,
+  "title": "Talking about everyday life",
+  "topic": "Simple Present",
+  "difficulty": "Easy",
+  "durationMin": 15,
+  "objectives": [
+    "Use the simple present to talk about habits and routines",
+    "Add -s/-es for he, she, and it",
+    "Form simple negative and question sentences"
+  ],
+  "intro": "The simple present is how we talk about things that are generally true, and about habits and routines we repeat. Let's learn it step by step.",
+  "sections": [
+    {
+      "kind": "concept",
+      "concept": {
+        "title": "What is the simple present?",
+        "explanation": "We use the simple present for habits, routines, and facts — things that are true in general, not just right now.\n\nThe basic structure is:\nSubject + base verb (+ object).",
+        "examples": [
+          "I drink tea every morning.",
+          "We study English on weekends.",
+          "The sun rises in the east."
+        ],
+        "note": "Signal words like always, usually, often, every day, and never often point to the simple present."
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Quick check: habits & routines",
+        "intro": "Let's make sure the basics are clear.",
+        "questions": [
+          {
+            "id": "d1-q1",
+            "type": "mcq",
+            "prompt": "Which sentence describes a daily habit?",
+            "options": [
+              "I am eating lunch right now.",
+              "I eat lunch at one o'clock every day.",
+              "I ate lunch an hour ago.",
+              "I will eat lunch soon."
+            ],
+            "answerIndex": 1,
+            "difficulty": "Easy",
+            "hint": "Look for a routine that repeats, not a single moment.",
+            "feedback": "\"Every day\" signals a repeated habit — that's the simple present."
+          },
+          {
+            "id": "d1-q2",
+            "type": "fill-blank",
+            "prompt": "Complete the sentence: They ____ (play) football on Sundays.",
+            "answer": "play",
+            "alternates": ["play."],
+            "difficulty": "Easy",
+            "feedback": "With they, the base verb stays the same: they play."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "concept",
+      "concept": {
+        "title": "He, she, it: add -s",
+        "explanation": "For he, she, and it, we add -s (or -es) to the verb.\n\nI/you/we/they work → he/she/it works.",
+        "examples": [
+          "She works in a hospital.",
+          "He watches TV in the evening.",
+          "It rains a lot in July."
+        ],
+        "note": "Verbs ending in -ch, -sh, -ss, -x, or -o usually take -es: watch → watches, go → goes."
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Practice: the -s ending",
+        "questions": [
+          {
+            "id": "d1-q3",
+            "type": "fill-blank",
+            "prompt": "Complete: My brother ____ (go) to school by bus.",
+            "answer": "goes",
+            "difficulty": "Medium",
+            "hint": "\"go\" ends in -o, so it takes -es.",
+            "feedback": "go → goes for he/she/it."
+          },
+          {
+            "id": "d1-q4",
+            "type": "structure",
+            "prompt": "Put the words in order: (English / she / speaks / well)",
+            "answer": "she speaks english well",
+            "alternates": ["she speaks english well."],
+            "difficulty": "Medium",
+            "feedback": "Subject + verb(+s) + object/adverb: She speaks English well."
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assignment",
+      "assignment": {
+        "title": "Final check",
+        "intro": "A short mixed review to finish the lesson.",
+        "questions": [
+          {
+            "id": "d1-q5",
+            "type": "mcq",
+            "prompt": "Choose the correct sentence.",
+            "options": [
+              "She don't like coffee.",
+              "She doesn't likes coffee.",
+              "She doesn't like coffee.",
+              "She not like coffee."
+            ],
+            "answerIndex": 2,
+            "difficulty": "Medium",
+            "hint": "After doesn't, use the base verb.",
+            "feedback": "Negatives for he/she/it use doesn't + base verb: She doesn't like coffee."
+          },
+          {
+            "id": "d1-q6",
+            "type": "reflection",
+            "prompt": "Write 2–3 sentences about your daily routine using the simple present."
+          }
+        ]
+      }
+    }
+  ]
+}
