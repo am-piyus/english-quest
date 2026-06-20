@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const features = [
   {
@@ -39,9 +40,12 @@ export default function Home() {
         <span className="flex items-center gap-2 text-lg font-bold text-ink">
           <span aria-hidden>🎓</span> English&nbsp;Quest
         </span>
-        <Link href="/login" className="text-sm font-semibold text-brand-dark hover:underline">
-          Sign in
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/login" className="text-sm font-semibold text-brand-dark hover:underline">
+            Sign in
+          </Link>
+        </div>
       </header>
 
       {/* Hero */}

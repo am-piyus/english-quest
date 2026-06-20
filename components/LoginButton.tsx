@@ -101,9 +101,9 @@ export default function LoginButton() {
 
       {googleEnabled && (
         <div className="flex items-center gap-3 text-xs text-ink-soft">
-          <span className="h-px flex-1 bg-black/10" />
+          <span className="h-px flex-1 bg-ink/10" />
           or
-          <span className="h-px flex-1 bg-black/10" />
+          <span className="h-px flex-1 bg-ink/10" />
         </div>
       )}
 

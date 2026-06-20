@@ -44,7 +44,7 @@ function Option({
       className={`rounded-2xl px-4 py-3 text-left text-sm font-semibold ring-1 transition-colors ${
         selected
           ? "bg-brand text-white ring-brand"
-          : "bg-white text-ink ring-black/10 hover:bg-brand-soft"
+          : "bg-surface text-ink ring-ink/10 hover:bg-brand-soft"
       }`}
     >
       {children}
@@ -111,7 +111,7 @@ export default function OnboardingForm({ session }: { session: Session }) {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Your name"
-          className="w-full rounded-2xl bg-white px-4 py-3 text-ink ring-1 ring-black/10 outline-none focus:ring-2 focus:ring-brand"
+          className="w-full rounded-2xl bg-surface px-4 py-3 text-ink ring-1 ring-ink/10 outline-none focus:ring-2 focus:ring-brand"
         />
       </div>
 

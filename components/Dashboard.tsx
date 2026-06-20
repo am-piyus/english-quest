@@ -7,6 +7,7 @@ import { useProfile } from "@/lib/useProfile";
 import { useProgress } from "@/lib/useProgress";
 import { buildCalendar, deriveStats } from "@/lib/progress";
 import LogoutButton from "@/components/LogoutButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import UserProfileCard from "@/components/UserProfileCard";
 import StreakCard from "@/components/StreakCard";
 import ProgressCard from "@/components/ProgressCard";
@@ -42,7 +43,10 @@ export default function Dashboard({ session }: { session: Session }) {
         <span className="flex items-center gap-2 text-lg font-bold text-ink">
           <span aria-hidden>🎓</span> English&nbsp;Quest
         </span>
-        <LogoutButton />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </header>
 
       <div className="mt-6 flex flex-col gap-6">

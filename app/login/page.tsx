@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 import { googleEnabled } from "@/lib/googleAuth";
 import LoginButton from "@/components/LoginButton";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-16">
+      <ThemeToggle className="fixed right-4 top-4 z-50" />
       <div className="eq-card w-full max-w-md p-8 text-center">
         <span className="text-4xl" aria-hidden>
           🎓

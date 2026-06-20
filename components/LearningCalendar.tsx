@@ -7,7 +7,7 @@ function CalendarTile({ day }: { day: CalendarDay }) {
 
   if (day.status === "locked") {
     return (
-      <div className={`${base} bg-paper-2 text-ink-soft ring-black/5 opacity-70`}>
+      <div className={`${base} bg-paper-2 text-ink-soft ring-ink/10 opacity-70`}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold">Day {m.day}</span>
           <span aria-hidden>🔒</span>

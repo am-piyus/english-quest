@@ -3,60 +3,106 @@
 /*
   English Quest — design system
   A warm, cozy "study-room" palette with a playful, gamified accent.
-  Single light theme on purpose (keeps the MVP consistent and bug-free).
+  Two themes: a cream daytime light theme and a warm violet-charcoal dark
+  theme (Droplet 25.3.2.3). Colors are tokens — the tokens flip per theme and
+  the eq-* component classes stay the same, so nothing downstream is rewritten.
 */
+
+/*
+  Enables class-based `dark:` utilities under <html class="dark">. The theme is
+  driven primarily by flipping the CSS-var tokens below — no `dark:` utilities
+  are needed today; this variant is kept ready for any future per-utility override.
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* ── Light theme (default) ───────────────────────────────────────────── */
   --color-paper: #fbf6ec; /* warm cream page background */
   --color-paper-2: #f3ebdc; /* slightly deeper cream for panels */
+  --color-surface: #fffdf9; /* raised surface (cards, inputs) */
   --color-ink: #2c2433; /* deep warm near-black for text */
-  --color-ink-soft: #6b6473; /* muted text */
+  --color-ink-soft: #574f63; /* muted text — darkened for comfortable contrast */
 
   --color-brand: #6d5dfc; /* indigo-violet — the "quest" accent */
-  --color-brand-dark: #4f3ff0;
-  --color-brand-soft: #ece9ff;
+  --color-brand-dark: #4f3ff0; /* readable brand text / accent on soft fills */
+  --color-brand-soft: #ece9ff; /* tinted brand fill */
 
   --color-amber: #f7b733; /* stars & rewards */
   --color-amber-soft: #fdf0d0;
 
-  --color-success: #22c55e;
+  --color-success: #11772f; /* deep forest green — readable as text on cream (>=4.5:1) */
   --color-success-soft: #dcfce7;
-  --color-danger: #ef4444;
+  --color-danger: #b91c1c; /* warm red — readable as text incl. on danger-soft fills */
   --color-danger-soft: #fee2e2;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
-  --background: var(--color-paper);
-  --foreground: var(--color-ink);
-}
+/*
+  Theme wiring lives in @layer base so the dark overrides reliably out-order the
+  generated `theme` layer (and survive the Tailwind v4 / lightningcss build —
+  bare top-level token redefinitions get pruned). Only token VALUES change in
+  dark; every eq-* class and token-based utility flips automatically.
+*/
+@layer base {
+  :root {
+    --background: var(--color-paper);
+    --foreground: var(--color-ink);
+    --glow: #fff7e8; /* warm top glow behind the page (light only) */
+  }
 
-body {
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #fff7e8 0%, transparent 60%),
-    var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  /* Dark theme — warm violet-charcoal, kept cozy (never harsh pure black). */
+  .dark {
+    --color-paper: #16121d; /* deep warm charcoal with a violet tint */
+    --color-paper-2: #211b2c; /* panels, one step up */
+    --color-surface: #271f35; /* raised surface (cards, inputs) */
+    --color-ink: #f2eef4; /* warm off-white (not #fff) */
+    --color-ink-soft: #aaa0b6; /* muted lavender-grey, readable on dark */
+
+    --color-brand: #6a55f0; /* vivid violet that pops on charcoal; white button text clears 4.5:1 */
+    --color-brand-dark: #b9adff; /* light lavender — readable brand text on dark */
+    --color-brand-soft: #2e2750; /* muted dark-violet fill */
+
+    --color-amber: #f7b733;
+    --color-amber-soft: #382c14; /* warm dark fill */
+
+    --color-success: #4ade80;
+    --color-success-soft: #16321f;
+    --color-danger: #f87171;
+    --color-danger-soft: #3a1c1c;
+
+    --background: var(--color-paper);
+    --foreground: var(--color-ink);
+    --glow: transparent; /* no warm glow on the dark page */
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--glow) 0%, transparent 60%),
+      var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  }
 }
 
 /* Reusable building blocks shared across every droplet (keeps the UI DRY). */
 @layer components {
   .eq-card {
-    @apply rounded-2xl bg-white/90 shadow-sm ring-1 ring-black/5 backdrop-blur;
+    @apply rounded-2xl bg-surface shadow-sm ring-1 ring-ink/10 backdrop-blur;
   }
 
   /* Base button — always combine with a variant, e.g. `eq-btn eq-btn-primary`. */
   .eq-btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-semibold transition-[filter,background-color,color] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .eq-btn-primary {
-    @apply bg-brand text-white hover:bg-brand-dark;
+    @apply bg-brand text-white hover:brightness-110;
   }
 
   .eq-btn-ghost {
-    @apply bg-transparent text-ink ring-1 ring-black/10 hover:bg-black/5;
+    @apply bg-transparent text-ink ring-1 ring-ink/10 hover:bg-ink/5;
   }
 
   .eq-chip {

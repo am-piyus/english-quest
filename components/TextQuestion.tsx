@@ -14,7 +14,7 @@ export default function TextQuestion({
   placeholder?: string;
 }) {
   const className =
-    "w-full rounded-2xl bg-white px-4 py-3 text-ink ring-1 ring-black/10 outline-none focus:ring-2 focus:ring-brand disabled:opacity-70";
+    "w-full rounded-2xl bg-surface px-4 py-3 text-ink ring-1 ring-ink/10 outline-none focus:ring-2 focus:ring-brand disabled:opacity-70";
 
   if (multiline) {
     return (

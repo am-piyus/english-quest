@@ -19,7 +19,7 @@ export default function MCQQuestion({
     <div className="grid gap-2">
       {options.map((opt, i) => {
         const isSelected = selected === String(i);
-        let cls = "bg-white text-ink ring-black/10 hover:bg-brand-soft";
+        let cls = "bg-surface text-ink ring-ink/10 hover:bg-brand-soft";
         if (showResult && i === correctIndex) {
           cls = "bg-success-soft text-ink ring-success/50";
         } else if (showResult && isSelected) {
