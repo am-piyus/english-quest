@@ -119,7 +119,7 @@ function SessionRunner({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl flex-1 px-5 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-2xl flex-1 px-5 pt-8 pb-24 sm:px-6">
       <AchievementPopup
         show={assignmentPerfect}
         title="Perfect! 🎉"
@@ -129,7 +129,7 @@ function SessionRunner({
       <div className="flex items-center justify-between">
         <Link
           href="/dashboard"
-          className="text-sm font-semibold text-brand-dark hover:underline"
+          className="-ml-2 inline-flex min-h-[44px] items-center px-2 text-sm font-semibold text-brand-dark hover:underline"
         >
           ← Exit
         </Link>
@@ -162,13 +162,13 @@ function SessionRunner({
         )}
       </div>
 
-      {section?.kind === "assignment" && !allAnswered && (
-        <p className="mt-4 text-center text-sm text-ink-soft">
-          Answer every question to continue.
-        </p>
-      )}
-
-      <div className="mt-4">
+      {/* Thumb-reachable nav, pinned to the bottom of the viewport on phones. */}
+      <div className="sticky bottom-0 z-20 mt-6 -mx-5 border-t border-ink/10 bg-paper/90 px-5 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        {section?.kind === "assignment" && !allAnswered && (
+          <p className="mb-2 text-center text-sm text-ink-soft">
+            Answer each question to continue — you can always try again. 🙂
+          </p>
+        )}
         <LessonNavigator
           onBack={() => goTo(Math.max(step - 1, 0))}
           onNext={next}

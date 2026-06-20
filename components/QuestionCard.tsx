@@ -65,7 +65,14 @@ export default function QuestionCard({
         )}
 
         {(question.type === "fill-blank" || question.type === "structure") && (
-          <TextQuestion value={answer} onChange={update} disabled={correct} />
+          <TextQuestion
+            value={answer}
+            onChange={update}
+            disabled={correct}
+            onSubmit={() => {
+              if (canSubmit) submit();
+            }}
+          />
         )}
 
         {isReflection && (
@@ -83,7 +90,7 @@ export default function QuestionCard({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="eq-btn eq-btn-primary px-4 py-2 text-sm"
+          className="eq-btn eq-btn-primary px-5 py-3 text-sm"
         >
           {isReflection ? "Save" : correct ? "Correct ✓" : "Check"}
         </button>
@@ -96,7 +103,7 @@ export default function QuestionCard({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               className={`flex items-center gap-1.5 text-sm font-semibold ${
-                isReflection || correct ? "text-success" : "text-danger"
+                isReflection || correct ? "text-success" : "text-ink"
               }`}
             >
               {isReflection ? (
@@ -106,7 +113,7 @@ export default function QuestionCard({
                   ✅ {praise(index)} <StarReward count={score} />
                 </>
               ) : (
-                `❌ ${nudge(index)}`
+                `🔁 ${nudge(index)}`
               )}
             </motion.span>
           )}

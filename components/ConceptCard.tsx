@@ -9,9 +9,9 @@ export default function ConceptCard({ concept }: { concept: Concept }) {
       <span className="eq-chip mb-3">📖 Concept</span>
       <h2 className="text-xl font-bold text-ink sm:text-2xl">{concept.title}</h2>
 
-      <div className="mt-3 space-y-3 text-ink">
+      <div className="mt-4 space-y-4 text-[15px] leading-7 text-ink sm:text-base">
         {paragraphs.map((p, i) => (
-          <p key={i} className="whitespace-pre-line leading-7">
+          <p key={i} className="whitespace-pre-line">
             {p}
           </p>
         ))}
