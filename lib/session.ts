@@ -44,6 +44,13 @@ export function signInDemo(): void {
 
 export function signOut(): void {
   if (typeof window === "undefined") return;
+  // Make Google sign-out predictable: stop GIS from silently auto-selecting the
+  // same account on the next visit. Guarded — a no-op if GIS never loaded.
+  try {
+    window.google?.accounts?.id?.disableAutoSelect();
+  } catch {
+    /* GIS not present — nothing to disable. */
+  }
   window.localStorage.removeItem(KEY);
   notify();
 }
