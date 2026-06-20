@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import type { Lesson } from "@/types/lesson";
 import type { AnswerResult, ResponseMap } from "@/types/question";
+import type { Session } from "@/lib/session";
+import { saveResult } from "@/lib/progress";
+import { buildSessionResult } from "@/lib/sessionTracker";
 import RequireAuth from "@/components/RequireAuth";
 import LessonHeader from "@/components/LessonHeader";
 import ConceptCard from "@/components/ConceptCard";
@@ -22,14 +25,25 @@ export default function SessionScreen({
   lesson: Lesson | null;
 }) {
   return (
-    <RequireAuth>{() => <SessionRunner day={day} lesson={lesson} />}</RequireAuth>
+    <RequireAuth>
+      {(session) => <SessionRunner session={session} day={day} lesson={lesson} />}
+    </RequireAuth>
   );
 }
 
-function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) {
+function SessionRunner({
+  session,
+  day,
+  lesson,
+}: {
+  session: Session;
+  day: number;
+  lesson: Lesson | null;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [responses, setResponses] = useState<ResponseMap>({});
+  const startedAt = useRef(0);
 
   function recordAnswer(result: AnswerResult) {
     setResponses((prev) => ({ ...prev, [result.questionId]: result }));
@@ -86,10 +100,19 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }
 
+  function finish() {
+    if (!lesson) return;
+    const durationSec = startedAt.current
+      ? Math.max(1, Math.round((Date.now() - startedAt.current) / 1000))
+      : 0;
+    saveResult(session.email, buildSessionResult(lesson, responses, durationSec));
+    router.push(`/session-complete?day=${lesson.day}`);
+  }
+
   function next() {
+    if (isIntro && startedAt.current === 0) startedAt.current = Date.now();
     if (isLast) {
-      // Droplet 25.3.1.7 will route to /session-complete with the results.
-      router.push("/dashboard");
+      finish();
       return;
     }
     goTo(Math.min(step + 1, totalSteps - 1));
@@ -151,7 +174,7 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
           onNext={next}
           backDisabled={step === 0}
           nextDisabled={section?.kind === "assignment" && !allAnswered}
-          nextLabel={isIntro ? "Start lesson →" : isLast ? "Finish" : "Next →"}
+          nextLabel={isIntro ? "Start lesson →" : isLast ? "Finish 🎉" : "Next →"}
         />
       </div>
     </div>
