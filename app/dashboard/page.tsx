@@ -1,10 +1,8 @@
 "use client";
 
 import RequireAuth from "@/components/RequireAuth";
-import DashboardGate from "@/components/DashboardGate";
+import Dashboard from "@/components/Dashboard";
 
 export default function DashboardPage() {
-  return (
-    <RequireAuth>{(session) => <DashboardGate session={session} />}</RequireAuth>
-  );
+  return <RequireAuth>{(session) => <Dashboard session={session} />}</RequireAuth>;
 }
