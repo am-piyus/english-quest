@@ -14,6 +14,7 @@ import ProgressCard from "@/components/ProgressCard";
 import ProgressBar from "@/components/ProgressBar";
 import TodayLessonCard from "@/components/TodayLessonCard";
 import LearningCalendar from "@/components/LearningCalendar";
+import ExportDataButton from "@/components/ExportDataButton";
 
 export default function Dashboard({ session }: { session: Session }) {
   const router = useRouter();
@@ -82,6 +83,15 @@ export default function Dashboard({ session }: { session: Session }) {
 
         <TodayLessonCard day={today} />
         <LearningCalendar days={calendar} />
+
+        {/* Data safety net — everything lives only on this device. */}
+        <footer className="mt-2 flex flex-col items-center gap-2 border-t border-ink/10 pt-6 text-center">
+          <ExportDataButton email={session.email} />
+          <p className="text-xs text-ink-soft">
+            Your profile and progress are saved only on this device. Export a
+            backup any time.
+          </p>
+        </footer>
       </div>
     </div>
   );

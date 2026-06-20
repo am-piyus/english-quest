@@ -1,6 +1,6 @@
 import type { Lesson, Question } from "@/types/lesson";
 import type { ResponseMap } from "@/types/question";
-import type { SessionResult } from "@/lib/progress";
+import { RESULT_VERSION, type SessionResult } from "@/lib/progress";
 import { summarize } from "@/lib/scoringEngine";
 import { computeSessionRewards } from "@/lib/rewardEngine";
 
@@ -24,6 +24,7 @@ export function buildSessionResult(
   const summary = summarize(allQuestions(lesson), Object.values(responses));
   const rewards = computeSessionRewards(summary);
   return {
+    _v: RESULT_VERSION,
     day: lesson.day,
     completedAt: new Date().toISOString(),
     stars: rewards.total,

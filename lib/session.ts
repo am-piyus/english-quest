@@ -7,6 +7,8 @@
  * verified auth is a V0.2 item for when the app moves to a backend host.
  */
 
+import { isRecord, readValidated, validateRaw } from "@/lib/storage";
+
 export type AuthProvider = "demo" | "google";
 
 export interface Session {
@@ -16,21 +18,34 @@ export interface Session {
   provider: AuthProvider;
 }
 
-const KEY = "eq:session";
+export const SESSION_KEY = "eq:session";
+const KEY = SESSION_KEY;
+
+/** Runtime shape guard — replaces the old blind `as Session` cast. */
+export function validateSession(raw: unknown): Session | null {
+  if (!isRecord(raw)) return null;
+  if (typeof raw.email !== "string" || raw.email === "") return null;
+  if (typeof raw.name !== "string") return null;
+  if (raw.provider !== "demo" && raw.provider !== "google") return null;
+  return {
+    email: raw.email,
+    name: raw.name,
+    picture: typeof raw.picture === "string" ? raw.picture : undefined,
+    provider: raw.provider,
+  };
+}
 
 export function getSession(): Session | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
-  } catch {
-    return null;
-  }
+  return readValidated(KEY, validateSession);
 }
 
 export function saveSession(session: Session): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(KEY, JSON.stringify(session));
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(session));
+  } catch {
+    // Storage full or blocked (private mode) — don't throw; let the flow proceed.
+  }
   notify();
 }
 
@@ -88,10 +103,6 @@ export function getSessionSnapshot(): Session | null {
   if (snapInit && raw === snapRaw) return snapValue;
   snapInit = true;
   snapRaw = raw;
-  try {
-    snapValue = raw ? (JSON.parse(raw) as Session) : null;
-  } catch {
-    snapValue = null;
-  }
+  snapValue = validateRaw(raw, validateSession);
   return snapValue;
 }

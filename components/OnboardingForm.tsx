@@ -76,7 +76,7 @@ export default function OnboardingForm({ session }: { session: Session }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const newProfile: UserProfile = {
+    const newProfile: Omit<UserProfile, "_v"> = {
       fullName: fullName.trim() || "Learner",
       level,
       goal,

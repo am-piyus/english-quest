@@ -8,8 +8,19 @@
  */
 
 import { getAllLessonMeta, totalLessons, type LessonMeta } from "@/lib/lessons";
+import {
+  isRecord,
+  parseStored,
+  readValidated,
+  recoverKey,
+  validateRaw,
+} from "@/lib/storage";
+
+/** Bump when the persisted shape changes; migrateSessionResult upgrades older data. */
+export const RESULT_VERSION = 1;
 
 export interface SessionResult {
+  _v: number;
   day: number;
   completedAt: string; // ISO timestamp
   stars: number;
@@ -22,29 +33,92 @@ export interface SessionResult {
 export type ProgressMap = Record<number, SessionResult>;
 
 const EMPTY: ProgressMap = {};
-const keyFor = (email: string) => `eq:progress:${email.toLowerCase()}`;
+export const progressKeyFor = (email: string) =>
+  `eq:progress:${email.toLowerCase()}`;
+const keyFor = progressKeyFor;
+
+const num = (x: unknown): number | null =>
+  typeof x === "number" && Number.isFinite(x) ? x : null;
+const nonneg = (x: unknown): number | null => {
+  const n = num(x);
+  return n !== null && n >= 0 ? n : null;
+};
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, n));
+
+/** Validate + upgrade one stored SessionResult, or null if unrecoverable. */
+function migrateSessionResult(raw: unknown): SessionResult | null {
+  if (!isRecord(raw)) return null;
+  const day = num(raw.day);
+  const stars = nonneg(raw.stars);
+  if (day === null || day < 1 || stars === null) return null; // minimum viable
+  return {
+    _v: RESULT_VERSION,
+    day,
+    completedAt:
+      typeof raw.completedAt === "string"
+        ? raw.completedAt
+        : new Date(0).toISOString(),
+    stars,
+    accuracy: clamp(num(raw.accuracy) ?? 0, 0, 100),
+    durationSec: nonneg(raw.durationSec) ?? 0,
+    correct: nonneg(raw.correct) ?? 0,
+    total: nonneg(raw.total) ?? 0,
+  };
+}
+
+/**
+ * Validate the whole ProgressMap: keep every entry that survives validation,
+ * silently drop individual unrecoverable records (don't nuke the streak over one
+ * bad day). A non-object container — or one whose every entry is garbage — is
+ * reported as corrupt (null) so the recovery pass resets just this key.
+ */
+export function migrateProgressMap(raw: unknown): ProgressMap | null {
+  if (!isRecord(raw)) return null;
+  const entries = Object.entries(raw);
+  const out: ProgressMap = {};
+  let kept = 0;
+  for (const [k, v] of entries) {
+    const day = Number(k);
+    // Only accept a canonical positive-integer key ("3", not "1e3"/"007"/" 3 ").
+    if (!Number.isInteger(day) || String(day) !== k || day < 1) continue;
+    const result = migrateSessionResult(v);
+    if (result) {
+      out[day] = { ...result, day }; // the map key is authoritative
+      kept += 1;
+    }
+  }
+  if (entries.length > 0 && kept === 0) return null; // had data, all unreadable
+  return out;
+}
 
 export function getProgress(email: string): ProgressMap {
-  if (typeof window === "undefined") return EMPTY;
-  try {
-    const raw = window.localStorage.getItem(keyFor(email));
-    return raw ? (JSON.parse(raw) as ProgressMap) : EMPTY;
-  } catch {
-    return EMPTY;
-  }
+  return readValidated(keyFor(email), migrateProgressMap) ?? EMPTY;
 }
 
 export function saveResult(email: string, result: SessionResult): void {
   if (typeof window === "undefined") return;
-  const map = getProgress(email);
+  // Read the existing blob defensively: if it's corrupt, recover (reset + notify)
+  // before writing, so a fresh write can't silently paper over the corruption.
+  const current = parseStored(keyFor(email), migrateProgressMap);
+  if (current.status === "corrupt") {
+    recoverKey(keyFor(email), "your learning progress", current.reason);
+  }
+  const map = current.status === "ok" ? current.value : EMPTY;
+  const stamped: SessionResult = { ...result, _v: RESULT_VERSION };
   // Keep the best result for a day (don't let a retry lower the score).
-  const existing = map[result.day];
+  const existing = map[stamped.day];
   const next: ProgressMap = {
     ...map,
-    [result.day]:
-      existing && existing.stars >= result.stars ? existing : result,
+    [stamped.day]:
+      existing && existing.stars >= stamped.stars ? existing : stamped,
   };
-  window.localStorage.setItem(keyFor(email), JSON.stringify(next));
+  try {
+    window.localStorage.setItem(keyFor(email), JSON.stringify(next));
+  } catch {
+    // Storage full or blocked (e.g. private mode) — don't throw, so the session
+    // can still finish and navigate; the result just isn't persisted.
+  }
   notify();
 }
 
@@ -162,10 +236,6 @@ export function getProgressSnapshot(email: string): ProgressMap {
   if (email === snapEmail && raw === snapRaw) return snapValue;
   snapEmail = email;
   snapRaw = raw;
-  try {
-    snapValue = raw ? (JSON.parse(raw) as ProgressMap) : EMPTY;
-  } catch {
-    snapValue = EMPTY;
-  }
+  snapValue = validateRaw(raw, migrateProgressMap) ?? EMPTY;
   return snapValue;
 }
