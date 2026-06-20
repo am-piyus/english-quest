@@ -1,33 +1,40 @@
+"use client";
+
 import type { Assignment } from "@/types/lesson";
+import type { ResponseMap, AnswerResult } from "@/types/question";
+import QuestionCard from "@/components/QuestionCard";
 
 /**
- * Placeholder assignment view for Droplet 25.3.1.4 — it shows the questions in
- * read-only form. Droplet 25.3.1.5 turns this into the interactive assignment
- * engine (answer inputs, validation, scoring) and 25.3.1.6 adds instant feedback.
+ * Interactive assignment: each question can be answered and checked in place,
+ * with validation + scoring (Droplet 25.3.1.5). Results are lifted to the
+ * session so progress and the end summary can use them. Droplet 25.3.1.6 adds
+ * the animated feedback and star rewards layered on top of this.
  */
 export default function AssignmentBlock({
   assignment,
+  responses,
+  onAnswer,
 }: {
   assignment: Assignment;
+  responses: ResponseMap;
+  onAnswer: (result: AnswerResult) => void;
 }) {
   return (
     <section className="eq-card p-6 sm:p-8">
       <span className="eq-chip mb-3">✏️ {assignment.title}</span>
       {assignment.intro && <p className="text-ink-soft">{assignment.intro}</p>}
 
-      <ol className="mt-4 space-y-3">
+      <div className="mt-4 space-y-4">
         {assignment.questions.map((q, i) => (
-          <li key={q.id} className="rounded-2xl bg-paper-2 px-4 py-3">
-            <span className="text-sm font-semibold text-ink">
-              {i + 1}. {q.prompt}
-            </span>
-          </li>
+          <QuestionCard
+            key={q.id}
+            question={q}
+            index={i}
+            saved={responses[q.id]}
+            onAnswer={onAnswer}
+          />
         ))}
-      </ol>
-
-      <p className="mt-4 text-xs text-ink-soft">
-        Interactive answering &amp; instant feedback unlock in the next step.
-      </p>
+      </div>
     </section>
   );
 }

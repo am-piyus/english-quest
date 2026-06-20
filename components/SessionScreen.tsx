@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Lesson } from "@/types/lesson";
+import type { AnswerResult, ResponseMap } from "@/types/question";
 import RequireAuth from "@/components/RequireAuth";
 import LessonHeader from "@/components/LessonHeader";
 import ConceptCard from "@/components/ConceptCard";
@@ -26,6 +27,11 @@ export default function SessionScreen({
 function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [responses, setResponses] = useState<ResponseMap>({});
+
+  function recordAnswer(result: AnswerResult) {
+    setResponses((prev) => ({ ...prev, [result.questionId]: result }));
+  }
 
   if (!lesson) {
     return (
@@ -58,6 +64,13 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
   const isIntro = step === 0;
   const isLast = step === totalSteps - 1;
   const section = isIntro ? null : lesson.sections[step - 1];
+
+  // On an assignment, require every gradable question to be attempted first.
+  const gradable =
+    section?.kind === "assignment"
+      ? section.assignment.questions.filter((q) => q.type !== "reflection")
+      : [];
+  const allAnswered = gradable.every((q) => Boolean(responses[q.id]));
 
   function goTo(nextStep: number) {
     setStep(nextStep);
@@ -93,15 +106,26 @@ function SessionRunner({ day, lesson }: { day: number; lesson: Lesson | null }) 
         {isIntro && <LessonHeader lesson={lesson} />}
         {section?.kind === "concept" && <ConceptCard concept={section.concept} />}
         {section?.kind === "assignment" && (
-          <AssignmentBlock assignment={section.assignment} />
+          <AssignmentBlock
+            assignment={section.assignment}
+            responses={responses}
+            onAnswer={recordAnswer}
+          />
         )}
       </div>
 
-      <div className="mt-6">
+      {section?.kind === "assignment" && !allAnswered && (
+        <p className="mt-4 text-center text-sm text-ink-soft">
+          Answer every question to continue.
+        </p>
+      )}
+
+      <div className="mt-4">
         <LessonNavigator
           onBack={() => goTo(Math.max(step - 1, 0))}
           onNext={next}
           backDisabled={step === 0}
+          nextDisabled={section?.kind === "assignment" && !allAnswered}
           nextLabel={isIntro ? "Start lesson →" : isLast ? "Finish" : "Next →"}
         />
       </div>
