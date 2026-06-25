@@ -18,7 +18,8 @@ Sign in → Open today's lesson → Learn concepts → Complete assignments
 - **Next.js** (App Router, **static export**) + **React** + **TypeScript**
 - **Tailwind CSS v4** for styling
 - **Client-side auth**: demo login + **Google Identity Services** (no backend)
-- **Framer Motion** for feedback animations _(added in a later droplet)_
+- **Framer Motion** for feedback animations
+- **lz-string** for backend-free shareable session links (V0.2)
 - **GitHub Pages** for hosting (Vercel-compatible too)
 
 > **Static by design.** The whole app is a static export so it can be hosted on
@@ -45,6 +46,29 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run build` | Create a production build          |
 | `npm run start` | Run the production build locally   |
 | `npm run lint`  | Lint the codebase                  |
+
+## Create & share your own sessions (V0.2)
+
+Beyond the built-in daily lessons, you can **author sessions in the browser** and
+**share them as a link** — with no backend.
+
+- **`/create`** — the session builder. Add ordered blocks (revision · concept ·
+  assignment · word search) and type the content fresh; drag or use ↑/↓ to
+  reorder. Assignments host multiple choice, short answer, **option-bank
+  fill-in-the-blank**, and reflection questions. Save locally, or generate a link.
+- **Sharing** — "Generate share link" compresses the whole session into the URL
+  (`…/play#s=<code>`, via `lz-string`). The link carries its own content, so a
+  friend opens it with no server lookup; it's validated on open.
+- **`/play`** — the source-agnostic player. It runs a shared session
+  (`/play#s=<code>`) or a locally-saved one (`/play?local=<id>`) through the same
+  player as the daily lessons. The registry player stays at `/session/[day]`.
+- **Word search** — generated **deterministically** from its word list, so
+  everyone who opens the same session gets the same puzzle without bloating the link.
+- **Results** — finishing any session (daily, shared, or built) records a local,
+  session-keyed result (`eq:results:<email>`), ready for a future dashboard.
+
+> Built under Bucket 25.3.3 (Session Authoring & Gamified Blocks). The design and
+> constraints live in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Deployment
 
