@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@/lib/session";
 import { useProfile } from "@/lib/useProfile";
@@ -45,6 +46,12 @@ export default function Dashboard({ session }: { session: Session }) {
           <span aria-hidden>🎓</span> English&nbsp;Quest
         </span>
         <div className="flex items-center gap-2">
+          <Link
+            href="/create"
+            className="eq-btn eq-btn-ghost px-3.5 py-2.5 text-sm"
+          >
+            ✏️ Create
+          </Link>
           <ThemeToggle />
           <LogoutButton />
         </div>
