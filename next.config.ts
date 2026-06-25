@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   // Serve each route as /route/index.html so static hosts resolve deep links.
   trailingSlash: true,
   basePath: basePath || undefined,
+  // Expose the base path to the client so generated share links derive from it
+  // (Next base path) rather than a hardcoded origin (see lib/shareLink.ts).
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   // Pin the workspace root so a stray lockfile higher up can't misdirect Next.
   turbopack: { root: path.join(__dirname) },
 };
