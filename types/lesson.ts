@@ -56,9 +56,17 @@ export interface Assignment {
   questions: Question[];
 }
 
+/** Optional recap block — a short revision of earlier material (V0.2). */
+export interface Revision {
+  title?: string;
+  summary: string; // short recap text (paragraphs separated by blank lines)
+  refDay?: number; // optional: the earlier day this revises
+}
+
 export type Section =
   | { kind: "concept"; concept: Concept }
-  | { kind: "assignment"; assignment: Assignment };
+  | { kind: "assignment"; assignment: Assignment }
+  | { kind: "revision"; revision: Revision };
 
 export interface Lesson {
   day: number;

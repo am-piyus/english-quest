@@ -50,6 +50,14 @@ function validateSection(raw: unknown, index: number): string[] {
     return [];
   }
 
+  if (s.kind === "revision") {
+    const r = s.revision as Record<string, unknown> | undefined;
+    if (!r || typeof r.summary !== "string" || r.summary.trim() === "") {
+      return [`${where}.revision needs a non-empty summary`];
+    }
+    return [];
+  }
+
   if (s.kind === "assignment") {
     const a = s.assignment as Record<string, unknown> | undefined;
     if (!a || typeof a.title !== "string") return [`${where}.assignment needs a title`];
@@ -63,7 +71,7 @@ function validateSection(raw: unknown, index: number): string[] {
     return errs;
   }
 
-  return [`${where}.kind must be "concept" or "assignment"`];
+  return [`${where}.kind must be "concept", "assignment", or "revision"`];
 }
 
 function validateQuestion(raw: unknown, where: string): string[] {
