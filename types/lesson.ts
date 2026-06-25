@@ -41,7 +41,23 @@ export interface ReflectionQuestion {
   hint?: string;
 }
 
-export type Question = ChoiceQuestion | TextQuestion | ReflectionQuestion;
+/** Dash-fill from an option bank: each item is a sentence with one blank "___". */
+export interface OptionBankQuestion {
+  id: string;
+  type: "option-bank";
+  prompt?: string;
+  options: string[]; // the bank
+  items: { text: string; answer: number }[]; // answer = index into options
+  hint?: string;
+  feedback?: string;
+  difficulty?: Difficulty;
+}
+
+export type Question =
+  | ChoiceQuestion
+  | TextQuestion
+  | ReflectionQuestion
+  | OptionBankQuestion;
 
 export interface Concept {
   title: string;

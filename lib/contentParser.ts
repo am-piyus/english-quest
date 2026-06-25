@@ -7,7 +7,14 @@ import type { Lesson } from "@/types/lesson";
  */
 
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
-const QUESTION_TYPES = ["mcq", "case", "fill-blank", "structure", "reflection"];
+const QUESTION_TYPES = [
+  "mcq",
+  "case",
+  "fill-blank",
+  "structure",
+  "reflection",
+  "option-bank",
+];
 
 export function validateLesson(raw: unknown): string[] {
   if (typeof raw !== "object" || raw === null) return ["lesson must be an object"];
@@ -95,6 +102,24 @@ function validateQuestion(raw: unknown, where: string): string[] {
   }
   if (q.type === "fill-blank" || q.type === "structure") {
     if (typeof q.answer !== "string") errs.push(`${where}.answer must be a string`);
+  }
+  if (q.type === "option-bank") {
+    if (!Array.isArray(q.options) || q.options.length < 2) {
+      errs.push(`${where}.options must have at least 2 items`);
+    }
+    if (!Array.isArray(q.items) || q.items.length < 1) {
+      errs.push(`${where}.items must have at least 1 sentence`);
+    } else {
+      q.items.forEach((raw, k) => {
+        const it = raw as Record<string, unknown>;
+        if (typeof it?.text !== "string") {
+          errs.push(`${where}.items[${k}].text must be a string`);
+        }
+        if (typeof it?.answer !== "number") {
+          errs.push(`${where}.items[${k}].answer must be a number`);
+        }
+      });
+    }
   }
   return errs;
 }

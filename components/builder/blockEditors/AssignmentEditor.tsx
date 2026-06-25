@@ -2,16 +2,18 @@
 
 import type { Assignment, Question } from "@/types/lesson";
 import { TextField, TextArea, splitLines } from "@/components/builder/fields";
+import OptionBankEditor from "@/components/builder/blockEditors/OptionBankEditor";
 
 /**
  * Assignment editor (Droplet 25.3.3.4) — hosts the question types. Extend by
  * adding a kind to QUESTION_KINDS + a `newQuestion` case + a `QuestionEditor`
- * branch (the option-bank type plugs in here in 25.3.3.5).
+ * branch (option-bank plugs in here in 25.3.3.5).
  */
 
 const QUESTION_KINDS = [
   { type: "mcq", label: "+ Multiple choice" },
   { type: "fill-blank", label: "+ Short answer" },
+  { type: "option-bank", label: "+ Option bank" },
   { type: "reflection", label: "+ Reflection" },
 ] as const;
 
@@ -28,6 +30,15 @@ function newQuestion(type: NewType): Question {
   }
   if (type === "fill-blank") {
     return { id, type: "fill-blank", prompt: "", answer: "" };
+  }
+  if (type === "option-bank") {
+    return {
+      id,
+      type: "option-bank",
+      prompt: "",
+      options: ["", ""],
+      items: [{ text: "", answer: 0 }],
+    };
   }
   return { id, type: "reflection", prompt: "" };
 }
@@ -59,8 +70,8 @@ function QuestionEditor({
       </div>
 
       <TextField
-        label="Prompt"
-        value={question.prompt}
+        label={question.type === "option-bank" ? "Prompt (optional)" : "Prompt"}
+        value={question.prompt ?? ""}
         onChange={(prompt) => onChange({ ...question, prompt })}
         placeholder="Ask the question…"
       />
@@ -135,6 +146,10 @@ function QuestionEditor({
             placeholder={"goes\ngoes."}
           />
         </>
+      )}
+
+      {question.type === "option-bank" && (
+        <OptionBankEditor value={question} onChange={onChange} />
       )}
 
       {/* Optional coaching, shared by graded question types. */}

@@ -1,4 +1,4 @@
-import type { Difficulty, Question } from "@/types/lesson";
+import type { Difficulty, OptionBankQuestion, Question } from "@/types/lesson";
 import type { AnswerResult } from "@/types/question";
 
 /** Stars a question is worth, by difficulty (Easy 1 · Medium 2 · Hard 3). */
@@ -11,6 +11,28 @@ export function starsFor(difficulty?: Difficulty): number {
     default:
       return 1;
   }
+}
+
+/**
+ * Grade an option-bank question (Droplet 25.3.3.5): the stored answer is a JSON
+ * array of chosen option indices (one per blank). Correct = every blank's chosen
+ * index matches items[i].answer (all-or-nothing); stars follow the difficulty.
+ */
+export function gradeOptionBank(
+  question: OptionBankQuestion,
+  answer: string,
+): { correct: boolean; stars: number } {
+  let chosen: unknown;
+  try {
+    chosen = JSON.parse(answer);
+  } catch {
+    chosen = null;
+  }
+  const arr = Array.isArray(chosen) ? chosen : [];
+  const correct =
+    question.items.length > 0 &&
+    question.items.every((it, i) => arr[i] === it.answer);
+  return { correct, stars: correct ? starsFor(question.difficulty) : 0 };
 }
 
 /** Stars earned for a single answered question. Reflections aren't graded. */

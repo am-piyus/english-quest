@@ -9,6 +9,7 @@ import { scoreQuestion } from "@/lib/scoringEngine";
 import { nudge, praise } from "@/lib/gamificationEngine";
 import MCQQuestion from "@/components/MCQQuestion";
 import TextQuestion from "@/components/TextQuestion";
+import OptionBankQuestion from "@/components/OptionBankQuestion";
 import StarReward from "@/components/StarReward";
 
 export default function QuestionCard({
@@ -44,7 +45,21 @@ export default function QuestionCard({
     onAnswer({ questionId: question.id, answer, correct: ok, score: earned });
   }
 
-  const canSubmit = answer.trim().length > 0 && !(correct && checked);
+  // An option-bank answer is "complete" only when every blank has a choice.
+  function isAnswerComplete(): boolean {
+    if (question.type !== "option-bank") return answer.trim().length > 0;
+    try {
+      const arr = JSON.parse(answer || "[]");
+      return (
+        Array.isArray(arr) &&
+        question.items.length > 0 &&
+        question.items.every((_, i) => typeof arr[i] === "number")
+      );
+    } catch {
+      return false;
+    }
+  }
+  const canSubmit = isAnswerComplete() && !(correct && checked);
 
   return (
     <div className="rounded-2xl bg-paper-2 p-4">
@@ -72,6 +87,17 @@ export default function QuestionCard({
             onSubmit={() => {
               if (canSubmit) submit();
             }}
+          />
+        )}
+
+        {question.type === "option-bank" && (
+          <OptionBankQuestion
+            options={question.options}
+            items={question.items}
+            value={answer}
+            onChange={update}
+            showResult={checked}
+            locked={correct}
           />
         )}
 

@@ -1,4 +1,5 @@
 import type { Question } from "@/types/lesson";
+import { gradeOptionBank } from "@/lib/scoringEngine";
 
 /** Loosely normalize free text so small differences don't fail a match. */
 export function normalize(text: string): string {
@@ -27,6 +28,10 @@ export function isCorrect(question: Question, answer: string): boolean {
       const accepted = [question.answer, ...(question.alternates ?? [])];
       return accepted.some((a) => normalize(a) === candidate);
     }
+    case "option-bank":
+      // Correctness lives with the option-bank scoring branch (scoringEngine),
+      // keeping isCorrect the single correctness gate for every question type.
+      return gradeOptionBank(question, answer).correct;
     case "reflection":
       return answer.trim().length > 0;
   }
