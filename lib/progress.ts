@@ -8,6 +8,7 @@
  */
 
 import { getAllLessonMeta, totalLessons, type LessonMeta } from "@/lib/lessons";
+import type { AnswerResult } from "@/types/question";
 import {
   isRecord,
   parseStored,
@@ -126,6 +127,75 @@ export function clearProgress(email: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(keyFor(email));
   notify();
+}
+
+/* ─── Session-keyed result log (Droplet 25.3.3.7) ──────────────────────────
+   Every completed session — registry, shared, or local — is recorded here keyed
+   by its session id, so custom/shared sessions log just like registry ones and
+   a future dashboard has structured, JSON-serialisable data to read. The
+   day-keyed ProgressMap above stays the source for the registry calendar. */
+
+export const LOGGED_RESULT_VERSION = 1;
+
+export interface LoggedResult {
+  _v: number;
+  sessionId: string;
+  source: "registry" | "shared" | "local";
+  day: number; // the lesson's own day (0 for builder-made sessions)
+  title: string;
+  completedAt: string; // ISO
+  stars: number;
+  accuracy: number; // 0–100
+  durationSec: number;
+  correct: number;
+  total: number;
+  responses: AnswerResult[]; // per-question results
+}
+
+type ResultLog = Record<string, LoggedResult>;
+const resultsKeyFor = (email: string) => `eq:results:${email.toLowerCase()}`;
+
+function migrateResultLog(raw: unknown): ResultLog | null {
+  if (!isRecord(raw)) return null;
+  const out: ResultLog = {};
+  for (const [id, v] of Object.entries(raw)) {
+    if (isRecord(v) && typeof v.sessionId === "string") {
+      out[id] = v as unknown as LoggedResult;
+    }
+  }
+  return out;
+}
+
+export function logSessionResult(email: string, record: LoggedResult): void {
+  if (typeof window === "undefined") return;
+  const key = resultsKeyFor(email);
+  const current = parseStored(key, migrateResultLog);
+  if (current.status === "corrupt") {
+    recoverKey(key, "your session results", current.reason);
+  }
+  const log: ResultLog = current.status === "ok" ? { ...current.value } : {};
+  const stamped: LoggedResult = { ...record, _v: LOGGED_RESULT_VERSION };
+  // Keep the best attempt per session (a replay shouldn't lower the score).
+  const existing = log[stamped.sessionId];
+  log[stamped.sessionId] =
+    existing && existing.stars >= stamped.stars ? existing : stamped;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(log));
+  } catch {
+    /* storage blocked — finishing the session still proceeds */
+  }
+  notify();
+}
+
+export function getLoggedResults(email: string): ResultLog {
+  return readValidated(resultsKeyFor(email), migrateResultLog) ?? {};
+}
+
+export function getLoggedResult(
+  email: string,
+  sessionId: string,
+): LoggedResult | null {
+  return getLoggedResults(email)[sessionId] ?? null;
 }
 
 /* ─── Derived stats ───────────────────────────────────────────────────── */

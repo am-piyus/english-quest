@@ -1,6 +1,12 @@
 import type { Lesson, Question } from "@/types/lesson";
 import type { ResponseMap } from "@/types/question";
-import { RESULT_VERSION, type SessionResult } from "@/lib/progress";
+import {
+  RESULT_VERSION,
+  LOGGED_RESULT_VERSION,
+  type SessionResult,
+  type LoggedResult,
+} from "@/lib/progress";
+import { sessionIdFor, type SessionSource } from "@/lib/customSessions";
 import { summarize } from "@/lib/scoringEngine";
 import { computeSessionRewards } from "@/lib/rewardEngine";
 
@@ -32,5 +38,34 @@ export function buildSessionResult(
     durationSec,
     correct: summary.correct,
     total: summary.gradable,
+  };
+}
+
+/**
+ * Build the session-keyed result record (Droplet 25.3.3.7) for any session
+ * source — registry, shared, or local — so completion + per-question results are
+ * logged uniformly, keyed by session id, for a future dashboard to read.
+ */
+export function buildLoggedResult(
+  lesson: Lesson,
+  source: SessionSource,
+  responses: ResponseMap,
+  durationSec: number,
+): LoggedResult {
+  const summary = summarize(allQuestions(lesson), Object.values(responses));
+  const rewards = computeSessionRewards(summary);
+  return {
+    _v: LOGGED_RESULT_VERSION,
+    sessionId: sessionIdFor(source),
+    source: source.kind,
+    day: lesson.day,
+    title: lesson.title,
+    completedAt: new Date().toISOString(),
+    stars: rewards.total,
+    accuracy: summary.accuracy,
+    durationSec,
+    correct: summary.correct,
+    total: summary.gradable,
+    responses: Object.values(responses),
   };
 }

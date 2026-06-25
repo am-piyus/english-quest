@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Lesson } from "@/types/lesson";
-import { loadSession } from "@/lib/customSessions";
+import { loadSession, type SessionSource } from "@/lib/customSessions";
 import SessionScreen from "@/components/SessionScreen";
 
 /**
@@ -16,7 +16,7 @@ import SessionScreen from "@/components/SessionScreen";
 
 type PlayState =
   | { status: "loading" }
-  | { status: "ready"; lesson: Lesson }
+  | { status: "ready"; lesson: Lesson; source: SessionSource }
   | { status: "error"; message: string };
 
 /** Resolve the session purely from the current URL (client-only). */
@@ -24,14 +24,14 @@ function resolveFromUrl(): PlayState {
   const hash = window.location.hash;
   const localId = new URLSearchParams(window.location.search).get("local");
 
-  let lesson: Lesson | null = null;
+  let source: SessionSource | null = null;
   let context = "session";
   if (hash.startsWith("#s=")) {
+    source = { kind: "shared", code: hash.slice(3) };
     context = "shared link";
-    lesson = loadSession({ kind: "shared", code: hash.slice(3) });
   } else if (localId) {
+    source = { kind: "local", id: localId };
     context = "saved session";
-    lesson = loadSession({ kind: "local", id: localId });
   } else {
     return {
       status: "error",
@@ -40,13 +40,14 @@ function resolveFromUrl(): PlayState {
     };
   }
 
+  const lesson = loadSession(source);
   if (!lesson) {
     return {
       status: "error",
       message: `This ${context} couldn't be opened — it may be incomplete, corrupt, or no longer available on this device.`,
     };
   }
-  return { status: "ready", lesson };
+  return { status: "ready", lesson, source };
 }
 
 export default function PlayPage() {
@@ -96,5 +97,11 @@ export default function PlayPage() {
     );
   }
 
-  return <SessionScreen day={state.lesson.day} lesson={state.lesson} />;
+  return (
+    <SessionScreen
+      day={state.lesson.day}
+      lesson={state.lesson}
+      source={state.source}
+    />
+  );
 }

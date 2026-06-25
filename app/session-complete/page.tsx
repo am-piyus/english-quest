@@ -7,10 +7,12 @@ import SessionSummary from "@/components/SessionSummary";
 
 function SessionCompleteInner() {
   const params = useSearchParams();
-  const day = Number(params.get("day") ?? "0");
+  const sid = params.get("sid");
+  const dayParam = params.get("day");
+  const day = dayParam != null ? Number(dayParam) : null;
   return (
     <RequireAuth>
-      {(session) => <SessionSummary session={session} day={day} />}
+      {(session) => <SessionSummary session={session} day={day} sid={sid} />}
     </RequireAuth>
   );
 }

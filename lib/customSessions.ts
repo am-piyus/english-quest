@@ -110,3 +110,25 @@ export function saveLocalSession(lesson: Lesson): string {
 export function listLocalSessions(): LocalSessionMeta[] {
   return readIndex();
 }
+
+/** FNV-1a → base36: a short, stable digest of a share code. */
+function fnv1a(s: string): string {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
+}
+
+/** A stable per-session id for result logging (Droplet 25.3.3.7). */
+export function sessionIdFor(source: SessionSource): string {
+  switch (source.kind) {
+    case "registry":
+      return `registry:${source.day}`;
+    case "local":
+      return `local:${source.id}`;
+    case "shared":
+      return `shared:${fnv1a(source.code)}`;
+  }
+}

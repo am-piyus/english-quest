@@ -7,8 +7,9 @@ import { motion } from "framer-motion";
 import type { Lesson } from "@/types/lesson";
 import type { AnswerResult, ResponseMap } from "@/types/question";
 import type { Session } from "@/lib/session";
-import { saveResult } from "@/lib/progress";
-import { buildSessionResult } from "@/lib/sessionTracker";
+import { saveResult, logSessionResult } from "@/lib/progress";
+import { buildSessionResult, buildLoggedResult } from "@/lib/sessionTracker";
+import type { SessionSource } from "@/lib/customSessions";
 import RequireAuth from "@/components/RequireAuth";
 import LessonHeader from "@/components/LessonHeader";
 import ConceptCard from "@/components/ConceptCard";
@@ -22,13 +23,22 @@ import AchievementPopup from "@/components/AchievementPopup";
 export default function SessionScreen({
   day,
   lesson,
+  source,
 }: {
   day: number;
   lesson: Lesson | null;
+  source?: SessionSource;
 }) {
   return (
     <RequireAuth>
-      {(session) => <SessionRunner session={session} day={day} lesson={lesson} />}
+      {(session) => (
+        <SessionRunner
+          session={session}
+          day={day}
+          lesson={lesson}
+          source={source}
+        />
+      )}
     </RequireAuth>
   );
 }
@@ -37,10 +47,12 @@ function SessionRunner({
   session,
   day,
   lesson,
+  source,
 }: {
   session: Session;
   day: number;
   lesson: Lesson | null;
+  source?: SessionSource;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -107,8 +119,17 @@ function SessionRunner({
     const durationSec = startedAt.current
       ? Math.max(1, Math.round((Date.now() - startedAt.current) / 1000))
       : 0;
-    saveResult(session.email, buildSessionResult(lesson, responses, durationSec));
-    router.push(`/session-complete?day=${lesson.day}`);
+    const src: SessionSource = source ?? { kind: "registry", day };
+    // Session-keyed log for every session type (a future dashboard reads this).
+    const logged = buildLoggedResult(lesson, src, responses, durationSec);
+    logSessionResult(session.email, logged);
+    if (src.kind === "registry") {
+      // The day-keyed result also powers the existing dashboard calendar/stats.
+      saveResult(session.email, buildSessionResult(lesson, responses, durationSec));
+      router.push(`/session-complete?day=${lesson.day}`);
+    } else {
+      router.push(`/session-complete?sid=${encodeURIComponent(logged.sessionId)}`);
+    }
   }
 
   function next() {
