@@ -13,6 +13,7 @@ import RequireAuth from "@/components/RequireAuth";
 import LessonHeader from "@/components/LessonHeader";
 import ConceptCard from "@/components/ConceptCard";
 import RevisionBlock from "@/components/RevisionBlock";
+import WordSearchBlock from "@/components/WordSearchBlock";
 import AssignmentBlock from "@/components/AssignmentBlock";
 import SessionProgress from "@/components/SessionProgress";
 import LessonNavigator from "@/components/LessonNavigator";
@@ -157,6 +158,9 @@ function SessionRunner({
           <RevisionBlock revision={section.revision} />
         )}
         {section?.kind === "concept" && <ConceptCard concept={section.concept} />}
+        {section?.kind === "wordsearch" && (
+          <WordSearchBlock wordsearch={section.wordsearch} />
+        )}
         {section?.kind === "assignment" && (
           <AssignmentBlock
             assignment={section.assignment}

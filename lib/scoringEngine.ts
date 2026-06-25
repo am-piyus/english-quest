@@ -35,6 +35,11 @@ export function gradeOptionBank(
   return { correct, stars: correct ? starsFor(question.difficulty) : 0 };
 }
 
+/** Stars for a single found word in a word-search block (Droplet 25.3.3.6). */
+export function scoreWordSearchWord(): number {
+  return 1;
+}
+
 /** Stars earned for a single answered question. Reflections aren't graded. */
 export function scoreQuestion(question: Question, correct: boolean): number {
   if (question.type === "reflection") return 0;

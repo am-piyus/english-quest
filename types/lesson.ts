@@ -79,10 +79,19 @@ export interface Revision {
   refDay?: number; // optional: the earlier day this revises
 }
 
+/** A generated word-search puzzle block (V0.2). The grid is derived from the
+ *  words at runtime (deterministically), so it isn't stored in the link. */
+export interface WordSearch {
+  title?: string;
+  words: string[]; // builder default = 5
+  gridSize: number; // MVP fixed = 15
+}
+
 export type Section =
   | { kind: "concept"; concept: Concept }
   | { kind: "assignment"; assignment: Assignment }
-  | { kind: "revision"; revision: Revision };
+  | { kind: "revision"; revision: Revision }
+  | { kind: "wordsearch"; wordsearch: WordSearch };
 
 export interface Lesson {
   day: number;

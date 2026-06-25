@@ -65,6 +65,22 @@ function validateSection(raw: unknown, index: number): string[] {
     return [];
   }
 
+  if (s.kind === "wordsearch") {
+    const w = s.wordsearch as Record<string, unknown> | undefined;
+    const words = w?.words;
+    const usable =
+      Array.isArray(words) &&
+      words.filter((x) => typeof x === "string" && x.trim().length >= 2).length >=
+        1;
+    if (!usable) {
+      return [`${where}.wordsearch needs at least one word (2+ letters)`];
+    }
+    if (typeof w?.gridSize !== "number") {
+      return [`${where}.wordsearch needs a numeric gridSize`];
+    }
+    return [];
+  }
+
   if (s.kind === "assignment") {
     const a = s.assignment as Record<string, unknown> | undefined;
     if (!a || typeof a.title !== "string") return [`${where}.assignment needs a title`];
@@ -78,7 +94,9 @@ function validateSection(raw: unknown, index: number): string[] {
     return errs;
   }
 
-  return [`${where}.kind must be "concept", "assignment", or "revision"`];
+  return [
+    `${where}.kind must be "concept", "assignment", "revision", or "wordsearch"`,
+  ];
 }
 
 function validateQuestion(raw: unknown, where: string): string[] {

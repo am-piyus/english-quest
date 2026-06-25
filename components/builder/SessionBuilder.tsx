@@ -27,7 +27,12 @@ import {
  */
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
-const ADD_KINDS: Section["kind"][] = ["revision", "concept", "assignment"];
+const ADD_KINDS: { kind: Section["kind"]; label: string }[] = [
+  { kind: "revision", label: "+ Revision" },
+  { kind: "concept", label: "+ Concept" },
+  { kind: "assignment", label: "+ Assignment" },
+  { kind: "wordsearch", label: "+ Word search" },
+];
 
 function newSection(kind: Section["kind"]): Section {
   if (kind === "revision") {
@@ -37,6 +42,12 @@ function newSection(kind: Section["kind"]): Section {
     return {
       kind: "concept",
       concept: { title: "", explanation: "", examples: [], note: "" },
+    };
+  }
+  if (kind === "wordsearch") {
+    return {
+      kind: "wordsearch",
+      wordsearch: { title: "", words: ["", "", "", "", ""], gridSize: 15 },
     };
   }
   return { kind: "assignment", assignment: { title: "", intro: "", questions: [] } };
@@ -186,12 +197,12 @@ export default function SessionBuilder() {
         <div className="mt-3 flex flex-wrap gap-2">
           {ADD_KINDS.map((k) => (
             <button
-              key={k}
+              key={k.kind}
               type="button"
-              onClick={() => addBlock(k)}
+              onClick={() => addBlock(k.kind)}
               className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-dark hover:brightness-105"
             >
-              + {k[0].toUpperCase() + k.slice(1)}
+              {k.label}
             </button>
           ))}
         </div>
