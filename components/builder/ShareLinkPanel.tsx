@@ -6,34 +6,62 @@ import { encode, shareUrl } from "@/lib/shareLink";
 import { validateLesson } from "@/lib/contentParser";
 
 /**
- * Generate a copyable share link for the current session (Droplet 25.3.3.4;
- * wired further in 25.3.3.7). Validates first (the single gate), then encodes to
- * <basePath>/play#s=<code> and warns — rather than emitting a broken link — if
- * the URL is unusually large.
+ * Generate a copyable share link for a session (Droplet 25.3.3.4; wired further
+ * in 25.3.3.7; re-shareable from the saved list in 25.3.3.9). Validates first
+ * (the single gate), then encodes to <basePath>/play#s=<code> and warns — rather
+ * than emitting a broken link — if the URL is unusually large.
+ *
+ * A share link is a self-contained SNAPSHOT (the whole session is in the URL,
+ * there's no backend), so the panel says so honestly: editing later doesn't
+ * change links already sent — you generate a fresh one. With `auto`, the link is
+ * produced on mount (used by the "Share" action on a saved session).
  */
-export default function ShareLinkPanel({ lesson }: { lesson: Lesson }) {
-  const [link, setLink] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
-  function generate() {
-    setCopied(false);
-    const errs = validateLesson(lesson);
-    if (errs.length > 0) {
-      setError("Finish the session before sharing — " + errs[0]);
-      setLink(null);
-      setWarning(null);
-      return;
-    }
-    setError(null);
-    const url = shareUrl(encode(lesson));
-    setLink(url);
-    setWarning(
+type LinkResult = {
+  link: string | null;
+  warning: string | null;
+  error: string | null;
+};
+const EMPTY: LinkResult = { link: null, warning: null, error: null };
+
+function computeLink(lesson: Lesson): LinkResult {
+  const errs = validateLesson(lesson);
+  if (errs.length > 0) {
+    return {
+      link: null,
+      warning: null,
+      error: "Finish the session before sharing — " + errs[0],
+    };
+  }
+  const url = shareUrl(encode(lesson));
+  return {
+    link: url,
+    warning:
       url.length > 8000
         ? "This session is large; very long links don't work everywhere. Consider trimming the content."
         : null,
-    );
+    error: null,
+  };
+}
+
+export default function ShareLinkPanel({
+  lesson,
+  auto = false,
+}: {
+  lesson: Lesson;
+  auto?: boolean;
+}) {
+  // `auto` rows compute the link once at mount; the manual button recomputes from
+  // the latest session. Pure compute → no effect, no setState-in-effect.
+  const [result, setResult] = useState<LinkResult>(() =>
+    auto ? computeLink(lesson) : EMPTY,
+  );
+  const [copied, setCopied] = useState(false);
+  const { link, warning, error } = result;
+
+  function generate() {
+    setCopied(false);
+    setResult(computeLink(lesson));
   }
 
   async function copy() {
@@ -48,13 +76,15 @@ export default function ShareLinkPanel({ lesson }: { lesson: Lesson }) {
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        onClick={generate}
-        className="eq-btn eq-btn-ghost w-full sm:w-auto"
-      >
-        🔗 Generate share link
-      </button>
+      {!auto && (
+        <button
+          type="button"
+          onClick={generate}
+          className="eq-btn eq-btn-ghost w-full sm:w-auto"
+        >
+          🔗 Generate share link
+        </button>
+      )}
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
@@ -81,6 +111,11 @@ export default function ShareLinkPanel({ lesson }: { lesson: Lesson }) {
               ⚠️ {warning}
             </p>
           )}
+          <p className="text-xs text-ink-soft">
+            This link is a snapshot of the session as it is right now. If you edit
+            it later, generate a new link to share the update — anyone who already
+            has this link keeps seeing this version.
+          </p>
         </div>
       )}
     </div>

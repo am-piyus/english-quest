@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Difficulty, Lesson, Section } from "@/types/lesson";
 import { validateLesson } from "@/lib/contentParser";
 import {
   saveLocalSession,
   listLocalSessions,
+  getLocalLesson,
+  deleteLocalSession,
+  saveDraft,
+  loadDraft,
+  clearDraft,
   type LocalSessionMeta,
+  type SessionDraft,
 } from "@/lib/customSessions";
 import ThemeToggle from "@/components/ThemeToggle";
 import BlockList from "@/components/builder/BlockList";
@@ -26,7 +32,9 @@ import {
  * sessions use day 0 (a sentinel; they play via /play, not /session/[day]).
  *
  * Saves are scoped to the signed-in user (Droplet 25.3.3.8): `email` comes from
- * the auth session via /create, so "Your saved sessions" is per-user.
+ * the auth session via /create. Saved sessions are fully manageable (25.3.3.9):
+ * each can be edited in place (no duplicate), re-shared, or deleted, and a
+ * single in-progress draft is autosaved so half-written work can be resumed.
  */
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
@@ -36,6 +44,9 @@ const ADD_KINDS: { kind: Section["kind"]; label: string }[] = [
   { kind: "assignment", label: "+ Assignment" },
   { kind: "wordsearch", label: "+ Word search" },
 ];
+
+const rowAction =
+  "inline-flex min-h-11 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-ink ring-1 ring-ink/10 transition-colors hover:ring-brand/40";
 
 function newSection(kind: Section["kind"]): Section {
   if (kind === "revision") {
@@ -56,6 +67,18 @@ function newSection(kind: Section["kind"]): Section {
   return { kind: "assignment", assignment: { title: "", intro: "", questions: [] } };
 }
 
+/** Does the in-progress lesson hold anything worth keeping as a draft? */
+function lessonHasContent(l: Lesson): boolean {
+  return Boolean(
+    l.title ||
+      l.topic ||
+      l.summary ||
+      l.intro ||
+      (l.objectives && l.objectives.length) ||
+      (l.sections && l.sections.length),
+  );
+}
+
 export default function SessionBuilder({ email }: { email: string }) {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
@@ -67,34 +90,103 @@ export default function SessionBuilder({ email }: { email: string }) {
   const [sections, setSections] = useState<Section[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [locals, setLocals] = useState<LocalSessionMeta[]>([]);
+  const [share, setShare] = useState<{ id: string; lesson: Lesson } | null>(null);
+  const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
+  const [checkedDraft, setCheckedDraft] = useState(false);
 
+  // The form state that was last saved/loaded — used to tell "unsaved changes"
+  // from "nothing new", so saving doesn't leave a redundant draft behind. null
+  // means "treat everything as unsaved" (a freshly resumed draft).
+  const baselineRef = useRef<string | null>(null);
+
+  const lesson: Lesson = useMemo(
+    () => ({
+      day: 0,
+      title: title.trim(),
+      topic: topic.trim(),
+      summary: summary.trim(),
+      difficulty,
+      durationMin,
+      objectives: objectivesText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      intro: intro.trim() || undefined,
+      sections,
+    }),
+    [title, topic, summary, difficulty, durationMin, objectivesText, intro, sections],
+  );
+
+  // Raw field signature (untrimmed) — exact, so a load/save baseline matches.
+  const formSig = JSON.stringify([
+    title,
+    topic,
+    summary,
+    difficulty,
+    durationMin,
+    objectivesText,
+    intro,
+    sections,
+  ]);
+
+  function hydrate(l: Lesson) {
+    setTitle(l.title ?? "");
+    setTopic(l.topic ?? "");
+    setSummary(l.summary ?? "");
+    setDifficulty(l.difficulty ?? "Easy");
+    setDurationMin(l.durationMin ?? 10);
+    setObjectivesText((l.objectives ?? []).join("\n"));
+    setIntro(l.intro ?? "");
+    setSections(l.sections ?? []);
+  }
+
+  function baselineFor(l: Lesson): string {
+    return JSON.stringify([
+      l.title ?? "",
+      l.topic ?? "",
+      l.summary ?? "",
+      l.difficulty ?? "Easy",
+      l.durationMin ?? 10,
+      (l.objectives ?? []).join("\n"),
+      l.intro ?? "",
+      l.sections ?? [],
+    ]);
+  }
+
+  // Load the saved-session list + any pending draft once on mount (client-only).
   useEffect(() => {
-    // localStorage is client-only → load after mount, in a microtask so we don't
-    // set state synchronously during the effect.
     let active = true;
     Promise.resolve().then(() => {
-      if (active) setLocals(listLocalSessions(email));
+      if (!active) return;
+      setLocals(listLocalSessions(email));
+      const d = loadDraft(email);
+      if (d && lessonHasContent(d.lesson)) {
+        setPendingDraft(d);
+        baselineRef.current = null; // an unsaved draft is dirty until handled
+      }
+      setCheckedDraft(true);
     });
     return () => {
       active = false;
     };
   }, [email]);
 
-  const lesson: Lesson = {
-    day: 0,
-    title: title.trim(),
-    topic: topic.trim(),
-    summary: summary.trim(),
-    difficulty,
-    durationMin,
-    objectives: objectivesText
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
-    intro: intro.trim() || undefined,
-    sections,
-  };
+  // Autosave the in-progress draft (after the initial check, and only once any
+  // resume/discard decision is made). Clears the draft when there's nothing new.
+  useEffect(() => {
+    if (!checkedDraft || pendingDraft) return;
+    if (!lessonHasContent(lesson)) {
+      clearDraft(email);
+      return;
+    }
+    if (baselineRef.current !== null && formSig === baselineRef.current) {
+      clearDraft(email);
+      return;
+    }
+    saveDraft(email, lesson, editingId);
+  }, [checkedDraft, pendingDraft, email, editingId, lesson, formSig]);
 
   function addBlock(kind: Section["kind"]) {
     setSections([...sections, newSection(kind)]);
@@ -108,9 +200,87 @@ export default function SessionBuilder({ email }: { email: string }) {
       setSavedId(null);
       return;
     }
-    const id = saveLocalSession(email, lesson);
+    const id = saveLocalSession(email, lesson, editingId ?? undefined);
     setSavedId(id);
+    setEditingId(id);
     setLocals(listLocalSessions(email));
+    baselineRef.current = formSig; // current state is now the saved baseline
+    clearDraft(email);
+  }
+
+  function editSession(id: string) {
+    const l = getLocalLesson(email, id);
+    if (!l) {
+      setLocals(listLocalSessions(email)); // stale row — refresh the list
+      return;
+    }
+    hydrate(l);
+    setEditingId(id);
+    setSavedId(null);
+    setErrors([]);
+    setShare(null);
+    baselineRef.current = baselineFor(l);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  function removeSession(id: string) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Delete this saved session? This can't be undone.")
+    ) {
+      return;
+    }
+    deleteLocalSession(email, id);
+    setLocals(listLocalSessions(email));
+    if (share?.id === id) setShare(null);
+    if (editingId === id) {
+      setEditingId(null); // keep the open content, but as a new session
+      setSavedId(null);
+      baselineRef.current = null;
+    }
+  }
+
+  function toggleShare(id: string) {
+    if (share?.id === id) {
+      setShare(null);
+      return;
+    }
+    const l = getLocalLesson(email, id);
+    if (l) setShare({ id, lesson: l });
+    else setLocals(listLocalSessions(email));
+  }
+
+  function startNew() {
+    setTitle("");
+    setTopic("");
+    setSummary("");
+    setDifficulty("Easy");
+    setDurationMin(10);
+    setObjectivesText("");
+    setIntro("");
+    setSections([]);
+    setEditingId(null);
+    setSavedId(null);
+    setErrors([]);
+    setShare(null);
+    baselineRef.current = null;
+  }
+
+  function resumeDraft() {
+    if (!pendingDraft) return;
+    hydrate(pendingDraft.lesson);
+    setEditingId(pendingDraft.editingId);
+    setSavedId(null);
+    setErrors([]);
+    baselineRef.current = null; // resumed work stays an active draft until saved
+    setPendingDraft(null);
+  }
+
+  function discardDraft() {
+    clearDraft(email);
+    setPendingDraft(null);
   }
 
   return (
@@ -125,10 +295,55 @@ export default function SessionBuilder({ email }: { email: string }) {
         <ThemeToggle />
       </header>
 
-      <h1 className="mt-4 text-2xl font-extrabold text-ink">Create a session</h1>
-      <p className="mt-1 text-ink-soft">
-        Assemble blocks, type the content, then save it or share a link.
-      </p>
+      {pendingDraft && (
+        <div className="eq-card mt-4 border-l-4 border-brand p-4">
+          <p className="text-sm font-semibold text-ink">
+            You have an unsaved draft
+            {pendingDraft.editingId ? " of a saved session" : ""}.
+          </p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Pick up where you left off, or discard it and start fresh.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={resumeDraft}
+              className="eq-btn eq-btn-primary px-4 py-2.5 text-sm"
+            >
+              Resume draft
+            </button>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="eq-btn eq-btn-ghost px-4 py-2.5 text-sm"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-ink">
+            {editingId ? "Edit session" : "Create a session"}
+          </h1>
+          <p className="mt-1 text-ink-soft">
+            {editingId
+              ? "Update this session — saving overwrites it (no duplicate)."
+              : "Assemble blocks, type the content, then save it or share a link."}
+          </p>
+        </div>
+        {editingId && (
+          <button
+            type="button"
+            onClick={startNew}
+            className="shrink-0 text-sm font-semibold text-brand-dark hover:underline"
+          >
+            + New
+          </button>
+        )}
+      </div>
 
       {/* Session metadata */}
       <section className="eq-card mt-6 space-y-3 p-5">
@@ -218,7 +433,7 @@ export default function SessionBuilder({ email }: { email: string }) {
           onClick={save}
           className="eq-btn eq-btn-primary w-full sm:w-auto"
         >
-          Save session
+          {editingId ? "Save changes" : "Save session"}
         </button>
 
         {errors.length > 0 && (
@@ -236,7 +451,9 @@ export default function SessionBuilder({ email }: { email: string }) {
 
         {savedId && (
           <div className="rounded-2xl border border-success/30 bg-success-soft p-3 text-sm text-ink">
-            <p className="font-semibold text-success">Saved on this device ✓</p>
+            <p className="font-semibold text-success">
+              {editingId ? "Changes saved ✓" : "Saved on this device ✓"}
+            </p>
             <p className="mt-1">
               Play it now:{" "}
               <Link
@@ -260,19 +477,42 @@ export default function SessionBuilder({ email }: { email: string }) {
           </h2>
           <ul className="space-y-2">
             {locals.map((m) => (
-              <li
-                key={m.id}
-                className="flex items-center justify-between gap-2 rounded-2xl bg-paper-2 px-4 py-3"
-              >
-                <span className="truncate text-sm font-semibold text-ink">
-                  {m.title}
-                </span>
-                <Link
-                  href={`/play?local=${m.id}`}
-                  className="shrink-0 text-sm font-semibold text-brand-dark hover:underline"
-                >
-                  Open →
-                </Link>
+              <li key={m.id} className="rounded-2xl bg-paper-2 p-3">
+                <p className="truncate text-sm font-semibold text-ink">
+                  {m.title || "Untitled session"}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Link href={`/play?local=${m.id}`} className={rowAction}>
+                    ▶ Open
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => editSession(m.id)}
+                    className={rowAction}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleShare(m.id)}
+                    aria-expanded={share?.id === m.id}
+                    className={rowAction}
+                  >
+                    🔗 Share
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeSession(m.id)}
+                    className={`${rowAction} text-danger ring-danger/30 hover:bg-danger-soft hover:ring-danger/50`}
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+                {share?.id === m.id && (
+                  <div className="mt-3">
+                    <ShareLinkPanel lesson={share.lesson} auto />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

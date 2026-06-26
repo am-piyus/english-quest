@@ -70,11 +70,13 @@ export function loadSession(
         return null; // the caller surfaces a clear, source-appropriate message
       }
     case "local":
-      return email ? loadLocalSession(email, source.id) : null;
+      return email ? getLocalLesson(email, source.id) : null;
   }
 }
 
-function loadLocalSession(email: string, id: string): Lesson | null {
+/** Raw read of a user's saved lesson by id (validated), or null. Used to load a
+ *  saved session back into the builder for editing (Droplet 25.3.3.9). */
+export function getLocalLesson(email: string, id: string): Lesson | null {
   if (typeof window === "undefined") return null;
   ensureMigrated(email);
   let raw: string | null;
@@ -135,34 +137,50 @@ function newId(): string {
 /**
  * Persist a lesson for `email` (the builder validates before calling this) and
  * return its id. Records id/title/author/timestamps in that user's index for
- * listing and a future dashboard. Re-saving an existing id preserves its
- * `createdAt` and bumps `updatedAt` (forward-compatible with an edit flow).
+ * listing and a future dashboard. Pass `existingId` to UPDATE that session in
+ * place (preserves `createdAt`, bumps `updatedAt`) instead of creating a
+ * duplicate (Droplet 25.3.3.9); an unknown id falls back to a fresh save.
  */
-export function saveLocalSession(email: string, lesson: Lesson): string {
-  const id = newId();
-  if (typeof window === "undefined") return id;
+export function saveLocalSession(
+  email: string,
+  lesson: Lesson,
+  existingId?: string,
+): string {
+  if (typeof window === "undefined") return existingId ?? newId();
   ensureMigrated(email);
+  const current = readIndex(email);
+  const id =
+    existingId && current.some((m) => m.id === existingId)
+      ? existingId
+      : newId();
   try {
-    window.localStorage.setItem(
-      localPrefix(email) + id,
-      JSON.stringify(lesson),
-    );
+    window.localStorage.setItem(localPrefix(email) + id, JSON.stringify(lesson));
   } catch {
     return id;
   }
   const now = nowIso();
-  const current = readIndex(email);
   const existing = current.find((m) => m.id === id);
   const index = current.filter((m) => m.id !== id);
   index.push({
     id,
     title: lesson.title || "Untitled session",
     author: email.toLowerCase(),
-    createdAt: existing?.createdAt ?? now,
+    createdAt: existing?.createdAt ?? now, // keep the original creation time
     updatedAt: now,
   });
   writeIndex(email, index);
   return id;
+}
+
+/** Remove a user's saved session — its content blob and its index entry. */
+export function deleteLocalSession(email: string, id: string): void {
+  if (typeof window === "undefined") return;
+  ensureMigrated(email);
+  safeRemove(localPrefix(email) + id);
+  writeIndex(
+    email,
+    readIndex(email).filter((m) => m.id !== id),
+  );
 }
 
 /** Sessions this user has authored on this device (index order). */
@@ -180,6 +198,63 @@ export function listAuthoredSessions(email: string): LocalSessionMeta[] {
   return listLocalSessions(email)
     .slice()
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/* ─── In-progress draft (Droplet 25.3.3.9) ─────────────────────────────────
+   One resumable draft per user, kept separate from saved sessions so a
+   half-written session is never silently lost. The builder autosaves the
+   current work here and clears it on save or explicit discard. */
+
+const draftKey = (email: string) => `eq:draft:${email.toLowerCase()}`;
+
+export interface SessionDraft {
+  lesson: Lesson; // partial/invalid is fine — a draft isn't validated
+  editingId: string | null; // the saved session being edited, if any
+}
+
+export function saveDraft(
+  email: string,
+  lesson: Lesson,
+  editingId: string | null,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      draftKey(email),
+      JSON.stringify({ lesson, editingId }),
+    );
+  } catch {
+    /* storage blocked — drafting just won't persist */
+  }
+}
+
+export function loadDraft(email: string): SessionDraft | null {
+  if (typeof window === "undefined") return null;
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(draftKey(email));
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || !isRecord(parsed.lesson)) return null;
+    if (!Array.isArray((parsed.lesson as { sections?: unknown }).sections)) {
+      return null; // not a builder-shaped lesson — ignore
+    }
+    return {
+      lesson: parsed.lesson as unknown as Lesson,
+      editingId: typeof parsed.editingId === "string" ? parsed.editingId : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearDraft(email: string): void {
+  if (typeof window === "undefined") return;
+  safeRemove(draftKey(email));
 }
 
 /* ─── One-time legacy migration (Droplet 25.3.3.8) ─────────────────────────
