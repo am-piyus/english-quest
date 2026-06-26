@@ -342,6 +342,27 @@ components/builder/
   ones. Structure the record so a future dashboard can read it. **Local only** —
   each player records their own results.
 
+### 6.6 Per-user authored-session store (25.3.3.8)
+
+Authored sessions are namespaced by the signed-in user so a future dashboard can
+fetch *a particular user's* created sessions — mirroring the existing
+`eq:progress:<email>` / `eq:results:<email>` convention.
+
+- Keys: `eq:local:<email>:<id>` (content) + `eq:local-index:<email>` (index).
+  Index entries carry `{ id, title, author, createdAt, updatedAt }`.
+- Authorship is **device-local sidecar data in the index, never in the `Lesson`
+  payload** — so `validateLesson` is untouched and `#s=` share links never leak
+  an author.
+- `loadSession(source, email?)` — the `local` kind resolves against `email`;
+  `shared`/`registry` ignore it (so `/play` stays open to non-signed-in friends).
+- `saveLocalSession(email, lesson)` / `listLocalSessions(email)` /
+  `listAuthoredSessions(email)` (newest-first, dashboard-facing).
+- **One-time migration:** sessions saved under the pre-25.3.3.8 global keys are
+  adopted, losslessly and idempotently, into the first user who signs in
+  afterwards, then the legacy index is consumed. Data layer only — no dashboard
+  UI, no backend sync (records stay JSON-serialisable + session-keyed for a
+  later sync).
+
 ---
 
 ## 7. Expected file tree after the bucket
@@ -398,6 +419,7 @@ handful of new modules plus a `builder/` folder.
 | **25.3.3.5** Option-bank block | `types/lesson.ts` [MOD], `components/OptionBankQuestion.tsx` [NEW], `lib/scoringEngine.ts` [MOD], `OptionBankEditor.tsx` [NEW] | learner fills blanks from bank; scored; creatable in builder |
 | **25.3.3.6** Word search block | `types/lesson.ts` [MOD], `lib/wordSearch.ts` [NEW], `components/WordSearchBlock.tsx` [NEW], `lib/scoringEngine.ts` [MOD], `WordSearchEditor.tsx` [NEW] | 15×15 puzzle generates deterministically; words found + scored; creatable in builder |
 | **25.3.3.7** Handoff + logging | `components/builder/ShareLinkPanel.tsx` [MOD], `lib/progress.ts` / `sessionTracker.ts` [MOD] | build→link in one step; completion logged locally per session |
+| **25.3.3.8** Per-user session library | `lib/customSessions.ts` [MOD], `components/builder/SessionBuilder.tsx` [MOD], `app/create/page.tsx` [MOD], `app/play/page.tsx` [MOD] | authored sessions stored under `eq:local:<email>:<id>` with author + timestamps; legacy global sessions migrate once; `listAuthoredSessions(email)` ready for the dashboard |
 
 ---
 

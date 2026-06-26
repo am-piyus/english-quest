@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Lesson } from "@/types/lesson";
 import { loadSession, type SessionSource } from "@/lib/customSessions";
+import { useSession } from "@/lib/useSession";
 import SessionScreen from "@/components/SessionScreen";
 
 /**
@@ -12,6 +13,10 @@ import SessionScreen from "@/components/SessionScreen";
  * so the base path/routing isn't an issue) or `?local=<id>` (saved) — resolves
  * it via loadSession, and renders the SAME SessionScreen. The registry player at
  * /session/[day] is untouched.
+ *
+ * A `local` session is per-user (Droplet 25.3.3.8), so it resolves against the
+ * signed-in user's email. Shared/registry sources need no auth, so this route
+ * stays open to non-signed-in friends opening a `#s=` link.
  */
 
 type PlayState =
@@ -19,8 +24,9 @@ type PlayState =
   | { status: "ready"; lesson: Lesson; source: SessionSource }
   | { status: "error"; message: string };
 
-/** Resolve the session purely from the current URL (client-only). */
-function resolveFromUrl(): PlayState {
+/** Resolve the session from the current URL (client-only); `email` scopes a
+ *  local session to its owner. */
+function resolveFromUrl(email: string | null): PlayState {
   const hash = window.location.hash;
   const localId = new URLSearchParams(window.location.search).get("local");
 
@@ -40,7 +46,7 @@ function resolveFromUrl(): PlayState {
     };
   }
 
-  const lesson = loadSession(source);
+  const lesson = loadSession(source, email ?? undefined);
   if (!lesson) {
     return {
       status: "error",
@@ -52,18 +58,23 @@ function resolveFromUrl(): PlayState {
 
 export default function PlayPage() {
   const [state, setState] = useState<PlayState>({ status: "loading" });
+  const session = useSession(); // undefined until auth state is read on the client
 
   useEffect(() => {
+    // Wait until the auth state is settled so a `local` session resolves against
+    // the right owner (a `#s=` shared link doesn't need it, but the email is
+    // cheap to thread through and keeps one resolve path).
+    if (session === undefined) return;
     // URL is client-only → resolve after mount, in a microtask so we're not
     // setting state synchronously during the effect.
     let active = true;
     Promise.resolve().then(() => {
-      if (active) setState(resolveFromUrl());
+      if (active) setState(resolveFromUrl(session?.email ?? null));
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [session]);
 
   if (state.status === "loading") {
     return (

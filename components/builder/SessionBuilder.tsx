@@ -24,6 +24,9 @@ import {
  * blocks, and on save runs the assembled object through validateLesson (the
  * single gate — zero new validation logic) before saveLocalSession. Custom
  * sessions use day 0 (a sentinel; they play via /play, not /session/[day]).
+ *
+ * Saves are scoped to the signed-in user (Droplet 25.3.3.8): `email` comes from
+ * the auth session via /create, so "Your saved sessions" is per-user.
  */
 
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
@@ -53,7 +56,7 @@ function newSection(kind: Section["kind"]): Section {
   return { kind: "assignment", assignment: { title: "", intro: "", questions: [] } };
 }
 
-export default function SessionBuilder() {
+export default function SessionBuilder({ email }: { email: string }) {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [summary, setSummary] = useState("");
@@ -71,12 +74,12 @@ export default function SessionBuilder() {
     // set state synchronously during the effect.
     let active = true;
     Promise.resolve().then(() => {
-      if (active) setLocals(listLocalSessions());
+      if (active) setLocals(listLocalSessions(email));
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [email]);
 
   const lesson: Lesson = {
     day: 0,
@@ -105,9 +108,9 @@ export default function SessionBuilder() {
       setSavedId(null);
       return;
     }
-    const id = saveLocalSession(lesson);
+    const id = saveLocalSession(email, lesson);
     setSavedId(id);
-    setLocals(listLocalSessions());
+    setLocals(listLocalSessions(email));
   }
 
   return (
