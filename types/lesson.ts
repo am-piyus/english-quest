@@ -84,7 +84,7 @@ export interface Revision {
 export interface WordSearch {
   title?: string;
   words: string[]; // builder default = 5
-  gridSize: number; // MVP fixed = 15
+  gridSize: 10 | 15; // 10×10 or 15×15 (author-selectable, Droplet 25.3.3.10)
 }
 
 export type Section =
