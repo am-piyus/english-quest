@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { OptionBankQuestion as OBQ } from "@/types/lesson";
 
 /**
- * Option-bank dash-fill (Droplet 25.3.3.5): tap a blank to select it, then tap
- * an option from the bank to fill it. The chosen indices are reported up as a
- * JSON array (one per blank) so QuestionCard scores it via the engine. Renders
- * inside QuestionCard like every other question type.
+ * Option-bank dash-fill (Droplet 25.3.3.5; mobile redesign in Bucket 25.3.3).
+ * Each sentence has one compact inline blank; tapping it opens a small picker
+ * anchored at the blank (options can repeat across blanks, so it's a per-blank
+ * picker, not a deplete-once bank). The picker is portalled to <body> so the
+ * card's backdrop-blur containing block can't clip it.
+ *
+ * UI-only: the chosen option indices are still reported up as a JSON array (one
+ * per blank) via onChange, byte-for-byte as before, so QuestionCard + the scoring
+ * engine are untouched.
  */
+
+const letter = (i: number) => (i < 26 ? String.fromCharCode(97 + i) : String(i + 1));
 
 function parseChosen(value: string, n: number): (number | null)[] {
   let arr: unknown;
@@ -22,6 +30,8 @@ function parseChosen(value: string, n: number): (number | null)[] {
     return typeof v === "number" ? v : null;
   });
 }
+
+type Anchor = { top: number; bottom: number; left: number };
 
 export default function OptionBankQuestion({
   options,
@@ -39,59 +49,158 @@ export default function OptionBankQuestion({
   locked: boolean;
 }) {
   const chosen = parseChosen(value, items.length);
-  const [active, setActive] = useState<number>(() => {
-    const empty = chosen.findIndex((c) => c === null);
-    return empty === -1 ? 0 : empty;
-  });
+  const [open, setOpen] = useState<number | null>(null);
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
+
+  // Close the picker on an outside tap, on any scroll (so it never floats out of
+  // place), or on resize.
+  useEffect(() => {
+    if (open === null) return;
+    const onDown = (e: Event) => {
+      const t = e.target as Element | null;
+      if (t?.closest("[data-ob-menu]") || t?.closest("[data-ob-blank]")) return;
+      setOpen(null);
+    };
+    const close = () => setOpen(null);
+    document.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
 
   function fill(blank: number, option: number) {
     const next = [...chosen];
     next[blank] = option;
     onChange(JSON.stringify(next));
-    const empty = next.findIndex((c) => c === null);
-    setActive(empty === -1 ? blank : empty);
   }
   function clear(blank: number) {
     const next = [...chosen];
     next[blank] = null;
     onChange(JSON.stringify(next));
-    setActive(blank);
+  }
+
+  function openPicker(i: number, el: HTMLElement) {
+    if (open === i) {
+      setOpen(null);
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    setAnchor({ top: r.top, bottom: r.bottom, left: r.left });
+    setOpen(i);
+  }
+
+  // The anchored picker, portalled to <body> so the card's backdrop-blur (a fixed
+  // containing block + stacking context) can't clip or mis-position it.
+  let picker: ReactNode = null;
+  if (open !== null && anchor && typeof window !== "undefined") {
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const spaceBelow = vh - anchor.bottom;
+    const openUp = spaceBelow < 240 && anchor.top > 240;
+    const left = Math.min(Math.max(8, anchor.left), Math.max(8, vw - 168));
+    const pos = openUp
+      ? { bottom: vh - anchor.top + 6, maxHeight: anchor.top - 16 }
+      : { top: anchor.bottom + 6, maxHeight: spaceBelow - 16 };
+    const current = chosen[open];
+    const blank = open;
+
+    picker = (
+      <ul
+        data-ob-menu
+        role="listbox"
+        style={{ position: "fixed", left, maxWidth: "calc(100vw - 16px)", ...pos }}
+        className="z-50 w-max min-w-[9rem] overflow-y-auto rounded-xl bg-surface p-1 shadow-lg ring-1 ring-ink/15"
+      >
+        {options.map((opt, o) => (
+          <li key={o}>
+            <button
+              type="button"
+              role="option"
+              aria-selected={current === o}
+              onClick={() => {
+                fill(blank, o);
+                setOpen(null);
+              }}
+              className={`flex min-h-[44px] w-full items-center rounded-lg px-3 text-left text-sm font-medium transition ${
+                current === o ? "bg-brand text-white" : "text-ink hover:bg-brand-soft"
+              }`}
+            >
+              {opt}
+            </button>
+          </li>
+        ))}
+        {current !== null && (
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                clear(blank);
+                setOpen(null);
+              }}
+              className="flex min-h-[44px] w-full items-center rounded-lg px-3 text-left text-sm font-medium text-ink-soft transition hover:bg-paper-2"
+            >
+              ✕ Clear
+            </button>
+          </li>
+        )}
+      </ul>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <ol className="space-y-2.5">
+    <div className="space-y-3">
+      <ol className="list-none space-y-2.5">
         {items.map((item, i) => {
           const parts = item.text.split("___");
           const pick = chosen[i];
           const isCorrect = showResult && pick === item.answer;
           const isWrong = showResult && pick !== item.answer;
+          const interactive = !showResult && !locked;
 
-          let blankCls = "bg-surface text-ink ring-ink/25";
-          if (active === i && !showResult) blankCls = "bg-brand-soft text-ink ring-brand";
+          let blankCls = "bg-surface text-ink-soft ring-1 ring-ink/30";
+          if (pick !== null && interactive)
+            blankCls = "bg-brand-soft text-ink ring-1 ring-brand/50";
+          if (open === i) blankCls = "bg-brand-soft text-ink ring-2 ring-brand";
           if (isCorrect) blankCls = "bg-success-soft text-ink ring-2 ring-success/60";
           if (isWrong) blankCls = "bg-paper-2 text-ink-soft ring-2 ring-ink/25";
 
           return (
-            <li key={i} className="flex flex-wrap items-center gap-1.5 text-sm text-ink">
+            <li key={i} className="text-sm leading-8 text-ink">
+              <span className="mr-1 font-semibold text-ink-soft">
+                ({letter(i)})
+              </span>
               <span>{parts[0]}</span>
               <button
                 type="button"
+                data-ob-blank
                 disabled={locked}
-                onClick={() => (pick === null ? setActive(i) : clear(i))}
-                className={`min-h-[36px] min-w-[64px] rounded-lg px-3 py-1 text-center font-medium ring-1 transition ${blankCls}`}
-                aria-label={`Blank ${i + 1}${pick !== null ? `: ${options[pick]}` : ", empty"}`}
+                aria-haspopup="listbox"
+                aria-expanded={open === i}
+                aria-label={`Blank ${i + 1}${
+                  pick !== null ? `, ${options[pick]}` : ", empty"
+                }${interactive ? " — tap to choose" : ""}`}
+                onClick={(e) => openPicker(i, e.currentTarget)}
+                className={`mx-0.5 inline-flex min-w-[2.75rem] items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1 align-middle text-sm font-semibold ring-1 transition ${blankCls}`}
               >
-                {pick !== null ? options[pick] : "＿＿"}
+                {pick !== null ? options[pick] : <span aria-hidden>·····</span>}
+                {interactive && (
+                  <span aria-hidden className="text-xs text-ink-soft">
+                    ▾
+                  </span>
+                )}
               </button>
-              <span>{parts[1] ?? ""}</span>
+              <span>{parts.slice(1).join("___")}</span>
               {isCorrect && (
-                <span className="font-bold text-success" aria-hidden>
+                <span className="ml-1 font-bold text-success" aria-hidden>
                   ✓
                 </span>
               )}
               {isWrong && (
-                <span className="font-bold text-ink-soft" aria-hidden>
+                <span className="ml-1 font-bold text-ink-soft" aria-hidden>
                   ↻
                 </span>
               )}
@@ -100,25 +209,11 @@ export default function OptionBankQuestion({
         })}
       </ol>
 
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt, o) => (
-          <button
-            key={o}
-            type="button"
-            disabled={locked}
-            onClick={() => fill(active, o)}
-            className="min-h-[40px] rounded-full bg-paper-2 px-3.5 py-1.5 text-sm font-medium text-ink ring-1 ring-ink/15 transition hover:bg-brand-soft disabled:opacity-50"
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-
       {!showResult && (
-        <p className="text-xs text-ink-soft">
-          Tap a blank, then tap an option to fill it.
-        </p>
+        <p className="text-xs text-ink-soft">Tap a blank to choose its word.</p>
       )}
+
+      {picker && typeof document !== "undefined" && createPortal(picker, document.body)}
     </div>
   );
 }

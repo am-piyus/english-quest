@@ -185,6 +185,11 @@ function SessionRunner({
         {section?.kind === "assignment" && (
           <AssignmentBlock
             assignment={section.assignment}
+            assignmentNumber={
+              lesson.sections
+                .slice(0, step)
+                .filter((s) => s.kind === "assignment").length
+            }
             responses={responses}
             onAnswer={recordAnswer}
           />

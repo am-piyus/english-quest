@@ -12,19 +12,29 @@ import QuestionCard from "@/components/QuestionCard";
  */
 export default function AssignmentBlock({
   assignment,
+  assignmentNumber = 1,
   responses,
   onAnswer,
 }: {
   assignment: Assignment;
+  assignmentNumber?: number;
   responses: ResponseMap;
   onAnswer: (result: AnswerResult) => void;
 }) {
   return (
-    <section className="eq-card p-6 sm:p-8">
-      <span className="eq-chip mb-3">✏️ {assignment.title}</span>
-      {assignment.intro && <p className="text-ink-soft">{assignment.intro}</p>}
+    <section className="eq-card p-5 sm:p-6">
+      <span className="eq-chip mb-3">✏️ Assignment {assignmentNumber}</span>
+      {assignment.title && (
+        <h3 className="text-lg font-bold text-ink">{assignment.title}</h3>
+      )}
+      {assignment.intro && (
+        <p className="mt-1 text-ink-soft">{assignment.intro}</p>
+      )}
 
-      <div className="mt-4 space-y-4">
+      {/* Self-contained, stable panel: scrolls internally if it's taller than the
+          viewport. The option-bank picker is portalled to <body>, so this
+          overflow never clips it. */}
+      <div className="mt-4 max-h-[65vh] space-y-4 overflow-y-auto pr-0.5">
         {assignment.questions.map((q, i) => (
           <QuestionCard
             key={q.id}

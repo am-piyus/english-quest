@@ -29,6 +29,10 @@ export default function QuestionCard({
   const [score, setScore] = useState(saved?.score ?? 0);
 
   const isReflection = question.type === "reflection";
+  // Letter each question (a)(b)(c)… An option-bank letters its own sentences, so
+  // it skips the question-level letter to avoid a confusing double label.
+  const letter = index < 26 ? String.fromCharCode(97 + index) : String(index + 1);
+  const showLetter = question.type !== "option-bank";
 
   function update(value: string) {
     setAnswer(value);
@@ -64,7 +68,8 @@ export default function QuestionCard({
   return (
     <div className="rounded-2xl bg-paper-2 p-4">
       <p className="text-sm font-semibold text-ink">
-        {index + 1}. {question.prompt}
+        {showLetter && <span className="text-ink-soft">({letter}) </span>}
+        {question.prompt}
       </p>
 
       <div className="mt-3">
