@@ -43,6 +43,7 @@ const ADD_KINDS: { kind: Section["kind"]; label: string }[] = [
   { kind: "concept", label: "+ Concept" },
   { kind: "assignment", label: "+ Assignment" },
   { kind: "wordsearch", label: "+ Word search" },
+  { kind: "spell", label: "+ Spelling" },
 ];
 
 const rowAction =
@@ -62,6 +63,16 @@ function newSection(kind: Section["kind"]): Section {
     return {
       kind: "wordsearch",
       wordsearch: { title: "", words: ["", "", "", "", ""], gridSize: 15 },
+    };
+  }
+  if (kind === "spell") {
+    return {
+      kind: "spell",
+      spell: {
+        title: "",
+        level: "Beginner",
+        words: [{ word: "" }, { word: "" }, { word: "" }],
+      },
     };
   }
   return { kind: "assignment", assignment: { title: "", intro: "", questions: [] } };

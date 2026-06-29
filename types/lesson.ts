@@ -87,11 +87,29 @@ export interface WordSearch {
   gridSize: 10 | 15; // 10×10 or 15×15 (author-selectable, Droplet 25.3.3.10)
 }
 
+/** One spelling word + optional author clues. The word itself is never shown to
+ *  the learner (audio + masked hint/example only) — see components/SpellQuestBlock. */
+export interface SpellWord {
+  word: string;
+  hint?: string; // definition / clue
+  example?: string; // example sentence (the word is masked when shown)
+}
+
+/** A spelling-practice block (SpellQuest, V1). Stores only words + light settings
+ *  so it stays compact in the #s= share link; the round is derived deterministically. */
+export interface SpellQuest {
+  title?: string;
+  words: SpellWord[];
+  count?: number; // optional cap → a seeded subset; default = all words
+  level?: "Beginner" | "Intermediate"; // display label only
+}
+
 export type Section =
   | { kind: "concept"; concept: Concept }
   | { kind: "assignment"; assignment: Assignment }
   | { kind: "revision"; revision: Revision }
-  | { kind: "wordsearch"; wordsearch: WordSearch };
+  | { kind: "wordsearch"; wordsearch: WordSearch }
+  | { kind: "spell"; spell: SpellQuest };
 
 export interface Lesson {
   day: number;

@@ -94,8 +94,28 @@ function validateSection(raw: unknown, index: number): string[] {
     return errs;
   }
 
+  if (s.kind === "spell") {
+    const sp = s.spell as Record<string, unknown> | undefined;
+    const words = sp?.words;
+    const usable =
+      Array.isArray(words) &&
+      words.filter(
+        (w) =>
+          w &&
+          typeof (w as { word?: unknown }).word === "string" &&
+          (w as { word: string }).word.trim().length >= 2,
+      ).length >= 1;
+    if (!usable) {
+      return [`${where}.spell needs at least one word (2+ letters)`];
+    }
+    if (sp?.count != null && typeof sp.count !== "number") {
+      return [`${where}.spell count must be a number`];
+    }
+    return [];
+  }
+
   return [
-    `${where}.kind must be "concept", "assignment", "revision", or "wordsearch"`,
+    `${where}.kind must be "concept", "assignment", "revision", "wordsearch", or "spell"`,
   ];
 }
 

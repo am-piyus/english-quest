@@ -8,13 +8,19 @@ import type { Lesson } from "@/types/lesson";
 import type { AnswerResult, ResponseMap } from "@/types/question";
 import type { Session } from "@/lib/session";
 import { saveResult, logSessionResult } from "@/lib/progress";
-import { buildSessionResult, buildLoggedResult } from "@/lib/sessionTracker";
+import {
+  buildSessionResult,
+  buildLoggedResult,
+  spellWordId,
+} from "@/lib/sessionTracker";
+import { spellRoundCount } from "@/lib/spellQuest";
 import type { SessionSource } from "@/lib/customSessions";
 import RequireAuth from "@/components/RequireAuth";
 import LessonHeader from "@/components/LessonHeader";
 import ConceptCard from "@/components/ConceptCard";
 import RevisionBlock from "@/components/RevisionBlock";
 import WordSearchBlock from "@/components/WordSearchBlock";
+import SpellQuestBlock from "@/components/SpellQuestBlock";
 import AssignmentBlock from "@/components/AssignmentBlock";
 import SessionProgress from "@/components/SessionProgress";
 import LessonNavigator from "@/components/LessonNavigator";
@@ -95,14 +101,24 @@ function SessionRunner({
   const isLast = step === totalSteps - 1;
   const section = isIntro ? null : lesson.sections[step - 1];
 
-  // On an assignment, require every gradable question to be attempted first.
-  const gradable =
+  // A graded block (assignment or spelling) must be fully attempted before moving
+  // on. Both report per-unit results into `responses`, so gating is uniform.
+  const requiredIds: string[] =
     section?.kind === "assignment"
-      ? section.assignment.questions.filter((q) => q.type !== "reflection")
-      : [];
-  const allAnswered = gradable.every((q) => Boolean(responses[q.id]));
+      ? section.assignment.questions
+          .filter((q) => q.type !== "reflection")
+          .map((q) => q.id)
+      : section?.kind === "spell"
+        ? Array.from({ length: spellRoundCount(section.spell) }, (_, i) =>
+            spellWordId(step - 1, i),
+          )
+        : [];
+  const gatedBlock = section?.kind === "assignment" || section?.kind === "spell";
+  const allAnswered = requiredIds.every((id) => Boolean(responses[id]));
   const assignmentPerfect =
-    gradable.length > 0 && gradable.every((q) => responses[q.id]?.correct);
+    section?.kind === "assignment" &&
+    requiredIds.length > 0 &&
+    requiredIds.every((id) => responses[id]?.correct);
 
   const sessionStars = Object.values(responses).reduce(
     (sum, r) => sum + r.score,
@@ -182,6 +198,13 @@ function SessionRunner({
         {section?.kind === "wordsearch" && (
           <WordSearchBlock wordsearch={section.wordsearch} />
         )}
+        {section?.kind === "spell" && (
+          <SpellQuestBlock
+            spell={section.spell}
+            sectionIndex={step - 1}
+            onAnswer={recordAnswer}
+          />
+        )}
         {section?.kind === "assignment" && (
           <AssignmentBlock
             assignment={section.assignment}
@@ -198,16 +221,18 @@ function SessionRunner({
 
       {/* Thumb-reachable nav, pinned to the bottom of the viewport on phones. */}
       <div className="sticky bottom-0 z-20 mt-6 -mx-5 border-t border-ink/10 bg-paper/90 px-5 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        {section?.kind === "assignment" && !allAnswered && (
+        {gatedBlock && !allAnswered && (
           <p className="mb-2 text-center text-sm text-ink-soft">
-            Answer each question to continue — you can always try again. 🙂
+            {section?.kind === "spell"
+              ? "Finish the spelling round to continue — you can always try again. 🙂"
+              : "Answer each question to continue — you can always try again. 🙂"}
           </p>
         )}
         <LessonNavigator
           onBack={() => goTo(Math.max(step - 1, 0))}
           onNext={next}
           backDisabled={step === 0}
-          nextDisabled={section?.kind === "assignment" && !allAnswered}
+          nextDisabled={gatedBlock && !allAnswered}
           nextLabel={isIntro ? "Start lesson →" : isLast ? "Finish 🎉" : "Next →"}
         />
       </div>

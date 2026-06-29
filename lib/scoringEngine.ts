@@ -40,6 +40,12 @@ export function scoreWordSearchWord(): number {
   return 1;
 }
 
+/** Stars for one spelling word (SpellQuest): first try 2 · retry 1 · revealed 0
+ *  ("you can win, you can't lose" — never negative). */
+export function scoreSpellWord(outcome: "first" | "retry" | "revealed"): number {
+  return outcome === "first" ? 2 : outcome === "retry" ? 1 : 0;
+}
+
 /** Stars earned for a single answered question. Reflections aren't graded. */
 export function scoreQuestion(question: Question, correct: boolean): number {
   if (question.type === "reflection") return 0;
@@ -47,32 +53,41 @@ export function scoreQuestion(question: Question, correct: boolean): number {
 }
 
 export interface ScoreSummary {
-  gradable: number; // gradable (non-reflection) questions answered
+  gradable: number; // gradable units attempted-or-not
   correct: number;
   stars: number;
-  accuracy: number; // 0–100 over gradable questions
+  accuracy: number; // 0–100 over gradable units
 }
 
-/** Aggregate a set of responses for the given questions into a score summary. */
+/** A gradable unit: anything that contributes to Total/Accuracy — an assignment
+ *  question or a spelling word. Reflections aren't gradable, so they're excluded
+ *  by whoever builds the unit list (see sessionTracker.gradableUnits). */
+export interface GradableUnit {
+  id: string;
+}
+
+/**
+ * Aggregate responses over the session's gradable units into a score summary.
+ * Counting by a unit list (not by question type) lets any block type — questions,
+ * spelling words — feed the same summary with no special-casing here.
+ */
 export function summarize(
-  questions: Question[],
+  units: GradableUnit[],
   responses: AnswerResult[],
 ): ScoreSummary {
   const byId = new Map(responses.map((r) => [r.questionId, r]));
-  let gradable = 0;
   let correct = 0;
   let stars = 0;
 
-  for (const q of questions) {
-    if (q.type === "reflection") continue;
-    gradable += 1;
-    const r = byId.get(q.id);
+  for (const u of units) {
+    const r = byId.get(u.id);
     if (r?.correct) {
       correct += 1;
       stars += r.score;
     }
   }
 
+  const gradable = units.length;
   const accuracy = gradable === 0 ? 0 : Math.round((correct / gradable) * 100);
   return { gradable, correct, stars, accuracy };
 }

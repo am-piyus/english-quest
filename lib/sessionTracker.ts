@@ -7,7 +7,8 @@ import {
   type LoggedResult,
 } from "@/lib/progress";
 import { sessionIdFor, type SessionSource } from "@/lib/customSessions";
-import { summarize } from "@/lib/scoringEngine";
+import { summarize, type GradableUnit } from "@/lib/scoringEngine";
+import { spellRoundCount } from "@/lib/spellQuest";
 import { computeSessionRewards } from "@/lib/rewardEngine";
 
 /** Every question across a lesson's assignment sections, in order. */
@@ -15,6 +16,33 @@ export function allQuestions(lesson: Lesson): Question[] {
   return lesson.sections.flatMap((s) =>
     s.kind === "assignment" ? s.assignment.questions : [],
   );
+}
+
+/** Stable id for a spelling word — block by its section index, word by its index
+ *  in the (deterministic) round. The player reports under the same id so the
+ *  summary counts it (see SpellQuestBlock). */
+export function spellWordId(sectionIndex: number, wordIndex: number): string {
+  return `spell:${sectionIndex}:${wordIndex}`;
+}
+
+/**
+ * Every gradable unit in a lesson, in order: assignment questions (minus
+ * reflections) plus one unit per played spelling word. The summary counts these
+ * uniformly, so adding a new gradable block type is just a branch here.
+ */
+export function gradableUnits(lesson: Lesson): GradableUnit[] {
+  const units: GradableUnit[] = [];
+  lesson.sections.forEach((s, idx) => {
+    if (s.kind === "assignment") {
+      for (const q of s.assignment.questions) {
+        if (q.type !== "reflection") units.push({ id: q.id });
+      }
+    } else if (s.kind === "spell") {
+      const n = spellRoundCount(s.spell);
+      for (let i = 0; i < n; i++) units.push({ id: spellWordId(idx, i) });
+    }
+  });
+  return units;
 }
 
 /**
@@ -27,7 +55,7 @@ export function buildSessionResult(
   responses: ResponseMap,
   durationSec: number,
 ): SessionResult {
-  const summary = summarize(allQuestions(lesson), Object.values(responses));
+  const summary = summarize(gradableUnits(lesson), Object.values(responses));
   const rewards = computeSessionRewards(summary);
   return {
     _v: RESULT_VERSION,
@@ -52,7 +80,7 @@ export function buildLoggedResult(
   responses: ResponseMap,
   durationSec: number,
 ): LoggedResult {
-  const summary = summarize(allQuestions(lesson), Object.values(responses));
+  const summary = summarize(gradableUnits(lesson), Object.values(responses));
   const rewards = computeSessionRewards(summary);
   return {
     _v: LOGGED_RESULT_VERSION,

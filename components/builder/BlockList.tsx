@@ -6,6 +6,7 @@ import RevisionEditor from "@/components/builder/blockEditors/RevisionEditor";
 import ConceptEditor from "@/components/builder/blockEditors/ConceptEditor";
 import AssignmentEditor from "@/components/builder/blockEditors/AssignmentEditor";
 import WordSearchEditor from "@/components/builder/blockEditors/WordSearchEditor";
+import SpellQuestEditor from "@/components/builder/blockEditors/SpellQuestEditor";
 
 /**
  * Ordered block list for the builder (Droplet 25.3.3.4): add (in SessionBuilder),
@@ -19,6 +20,7 @@ const KIND_LABEL: Record<Section["kind"], string> = {
   concept: "📖 Concept",
   assignment: "✏️ Assignment",
   wordsearch: "🔎 Word search",
+  spell: "🔤 Spelling",
 };
 
 export default function BlockList({
@@ -132,6 +134,12 @@ export default function BlockList({
               onChange={(wordsearch) =>
                 update(i, { kind: "wordsearch", wordsearch })
               }
+            />
+          )}
+          {section.kind === "spell" && (
+            <SpellQuestEditor
+              value={section.spell}
+              onChange={(spell) => update(i, { kind: "spell", spell })}
             />
           )}
         </div>
