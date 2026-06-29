@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Difficulty, Lesson, Section } from "@/types/lesson";
 import { validateLesson } from "@/lib/contentParser";
+import { skeletonJson } from "@/lib/skeletonExport";
+import { importLesson } from "@/lib/importLesson";
 import {
   saveLocalSession,
   listLocalSessions,
@@ -107,6 +109,13 @@ export default function SessionBuilder({ email }: { email: string }) {
   const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null);
   const [checkedDraft, setCheckedDraft] = useState(false);
 
+  // AI-assisted authoring (Droplet 25.3.3.13): export a skeleton, paste filled JSON back.
+  const [skeletonText, setSkeletonText] = useState<string | null>(null);
+  const [skeletonCopied, setSkeletonCopied] = useState(false);
+  const [aiPaste, setAiPaste] = useState("");
+  const [importRepairs, setImportRepairs] = useState<string[] | null>(null);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+
   // The form state that was last saved/loaded — used to tell "unsaved changes"
   // from "nothing new", so saving doesn't leave a redundant draft behind. null
   // means "treat everything as unsaved" (a freshly resumed draft).
@@ -202,6 +211,43 @@ export default function SessionBuilder({ email }: { email: string }) {
   function addBlock(kind: Section["kind"]) {
     setSections([...sections, newSection(kind)]);
     setSavedId(null);
+  }
+
+  // Serialize the current skeleton (with the _ai header) and copy it for an
+  // external AI. The textarea is always shown too, so copy works even if the
+  // Clipboard API is blocked.
+  function exportSkeleton() {
+    const json = skeletonJson(lesson);
+    setSkeletonText(json);
+    setSkeletonCopied(false);
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(json).then(
+        () => setSkeletonCopied(true),
+        () => setSkeletonCopied(false),
+      );
+    }
+  }
+
+  // Tolerant paste-back: import → load into the builder for review (NOT saved).
+  function importFilled() {
+    const result = importLesson(aiPaste);
+    if ("errors" in result) {
+      setImportErrors(result.errors);
+      setImportRepairs(null);
+      return;
+    }
+    hydrate(result.lesson);
+    setEditingId(null); // an imported draft is a new session until saved
+    setSavedId(null);
+    setErrors([]);
+    setShare(null);
+    baselineRef.current = null; // treat as unsaved so it autosaves + Save works
+    setImportErrors([]);
+    setImportRepairs(result.repairs);
+    setAiPaste("");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   function save() {
@@ -355,6 +401,98 @@ export default function SessionBuilder({ email }: { email: string }) {
           </button>
         )}
       </div>
+
+      {/* AI-assisted authoring: skeleton out → fill in any AI → paste back. */}
+      <section className="eq-card mt-6 space-y-3 p-5">
+        <div>
+          <h2 className="text-base font-bold text-ink">✨ Draft with AI</h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Build an empty skeleton below (blocks + question counts), export it,
+            fill it in any AI for your topic, then paste it back here. The AI
+            never sees your account — it runs outside the app.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={exportSkeleton}
+            className="eq-btn eq-btn-ghost px-4 py-2.5 text-sm"
+          >
+            ⬇️ Export skeleton for AI
+          </button>
+          {skeletonText && (
+            <span className="text-xs font-semibold text-success">
+              {skeletonCopied ? "Copied to clipboard ✓" : "Ready — select & copy below"}
+            </span>
+          )}
+        </div>
+
+        {skeletonText && (
+          <textarea
+            readOnly
+            value={skeletonText}
+            onFocus={(e) => e.currentTarget.select()}
+            rows={5}
+            className={`${fieldClass} font-mono text-xs`}
+            aria-label="Skeleton JSON to copy into an AI"
+          />
+        )}
+
+        <div className="border-t border-ink/10 pt-3">
+          <TextArea
+            label="Paste filled session JSON"
+            value={aiPaste}
+            onChange={setAiPaste}
+            rows={4}
+            placeholder='Paste the completed JSON the AI returned, then tap Import…'
+          />
+          <button
+            type="button"
+            onClick={importFilled}
+            disabled={aiPaste.trim() === ""}
+            className="eq-btn eq-btn-primary mt-2 px-4 py-2.5 text-sm"
+          >
+            Import for review
+          </button>
+
+          {importErrors.length > 0 && (
+            <div className="mt-3 rounded-2xl border border-danger/30 bg-danger-soft p-3">
+              <p className="text-sm font-semibold text-danger">
+                Couldn&apos;t import — nothing was changed:
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-danger">
+                {importErrors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {importRepairs && (
+            <div className="mt-3 rounded-2xl border border-success/30 bg-success-soft p-3 text-sm text-ink">
+              <p className="font-semibold text-success">
+                Imported into the builder for review ✓
+              </p>
+              {importRepairs.length > 0 ? (
+                <>
+                  <p className="mt-1">Auto-fixed {importRepairs.length}:</p>
+                  <ul className="mt-1 list-disc pl-5 text-ink-soft">
+                    {importRepairs.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="mt-1 text-ink-soft">No fixes needed.</p>
+              )}
+              <p className="mt-2 text-ink-soft">
+                Review and edit below, then Save — nothing is saved until you do.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Session metadata */}
       <section className="eq-card mt-6 space-y-3 p-5">
